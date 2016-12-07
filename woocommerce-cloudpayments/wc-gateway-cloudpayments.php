@@ -187,7 +187,7 @@ function CloudPayments() {
         public function handle_callback() {
         	echo '{"code":0}';
         	$headers = getallheaders();
-        	if (!isset($headers['Content-HMAC'])) {
+        	if ((!isset($headers['Content-HMAC'])) and (!isset($headers['Content-Hmac']))) {
         		mail(get_option('admin_email'), 'не установлены заголовки', print_r($headers,1));
         		exit;
         	}
@@ -197,7 +197,7 @@ function CloudPayments() {
             //Проверка подписи
 			$s = hash_hmac('sha256', $message, $this->api_pass, true);
 			$hmac = base64_encode($s);
-			if ($headers['Content-HMAC'] != $hmac) {
+			if ((!isset($headers['Content-HMAC'])) and (!isset($headers['Content-Hmac']))) {
         		mail(get_option('admin_email'), 'подпись платежа cloudpayments некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     HMAC: '. print_r($hmac));
         		exit;
 			}
