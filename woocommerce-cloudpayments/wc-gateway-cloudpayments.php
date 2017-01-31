@@ -197,7 +197,7 @@ function CloudPayments() {
             //Проверка подписи
 			$s = hash_hmac('sha256', $message, $this->api_pass, true);
 			$hmac = base64_encode($s);
-			if ((!isset($headers['Content-HMAC'])) and (!isset($headers['Content-Hmac']))) {
+				if (($headers['Content-HMAC'] != $hmac) or ($headers['Content-Hmac'] != $hmac)){
         		mail(get_option('admin_email'), 'подпись платежа cloudpayments некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     HMAC: '. print_r($hmac));
         		exit;
 			}
