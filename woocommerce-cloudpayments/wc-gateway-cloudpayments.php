@@ -1,12 +1,12 @@
 <?php
-/*
-Plugin Name: WooCommerce CloudPayments Gateway
-Plugin URI: http://woothemes.com/woocommerce
-Description: Extends WooCommerce with CloudPayments Gateway.
-Version: 1.0.0
-Author: Konstantin Benko
-Author URI: https://vk.com/kosteg_benko
-*/
+/**
+ * Plugin Name: WooCommerce CloudPayments Gateway
+ * Plugin URI: http://woothemes.com/woocommerce
+ * Description: Extends WooCommerce with CloudPayments Gateway.
+ * Version: 1.0.0
+ * Author: Konstantin Benko
+ * Author URI: https://vk.com/kosteg_benko
+ */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // if ngnix, not Apache 
@@ -188,7 +188,7 @@ function CloudPayments() {
         	echo '{"code":0}';
         	$headers = getallheaders();
         	if ((!isset($headers['Content-HMAC'])) and (!isset($headers['Content-Hmac']))) {
-        		mail(get_option('admin_email'), 'не установлены заголовки', print_r($headers,1));
+        		wp_mail(get_option('admin_email'), 'не установлены заголовки', print_r($headers,1));
         		exit;
         	}
         	$message = file_get_contents('php://input');
@@ -198,7 +198,7 @@ function CloudPayments() {
 			$s = hash_hmac('sha256', $message, $this->api_pass, true);
 			$hmac = base64_encode($s);
 				if (($headers['Content-HMAC'] != $hmac) or ($headers['Content-Hmac'] != $hmac)){
-        		mail(get_option('admin_email'), 'подпись платежа cloudpayments некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     HMAC: '. print_r($hmac));
+        		wp_mail(get_option('admin_email'), 'подпись платежа cloudpayments некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     HMAC: '. print_r($hmac));
         		exit;
 			}
 
@@ -206,7 +206,7 @@ function CloudPayments() {
 			global $woocommerce;			
 			$order = new WC_Order( $posted['InvoiceId'] );
 			if ($posted['Amount'] != $order->get_total()) {
-        		mail(get_option('admin_email'), 'сумма заказа некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     order: '. print_r($order,1));
+        		wp_mail(get_option('admin_email'), 'сумма заказа некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     order: '. print_r($order,1));
         		exit;
 			}
             update_post_meta($posted['InvoiceId'], 'CloudPayments', json_encode($posted, JSON_UNESCAPED_UNICODE));
