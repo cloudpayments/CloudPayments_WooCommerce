@@ -1,12 +1,12 @@
 <?php
-/*
-Plugin Name: WooCommerce CloudPayments Gateway
-Plugin URI: http://woothemes.com/woocommerce
-Description: Extends WooCommerce with CloudPayments Gateway.
-Version: 1.1.0
-Author: Konstantin Benko
-Author URI: https://vk.com/kosteg_benko
-*/
+/**
+ * Plugin Name: WooCommerce CloudPayments Gateway
+ * Plugin URI: http://woothemes.com/woocommerce
+ * Description: Extends WooCommerce with CloudPayments Gateway.
+ * Version: 1.1.0
+ * Author: Konstantin Benko
+ * Author URI: https://vk.com/kosteg_benko
+ */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // if ngnix, not Apache 
@@ -49,7 +49,7 @@ function CloudPayments() {
 			$this->method_title       = __( 'CloudPayments', 'woocommerce' );
 			$this->method_description = 'CloudPayments – самый простой и удобный способ оплаты. Комиссий нет.';
 			$this->supports           = array( 'products','pre-orders' );
-            $this->enabled            =  $this->get_option( 'enabled' );
+            		$this->enabled            =  $this->get_option( 'enabled' );
 			$this->init_form_fields();
 			$this->init_settings();
 			$this->title          	= $this->get_option( 'title' );
@@ -66,7 +66,7 @@ function CloudPayments() {
 			
 			add_action( 'woocommerce_receipt_cp', 	array( $this, 'payment_page' ) );
 			add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
-            add_action( 'woocommerce_api_'. strtolower( get_class( $this ) ), array( $this, 'handle_callback' ) );
+            		add_action( 'woocommerce_api_'. strtolower( get_class( $this ) ), array( $this, 'handle_callback' ) );
 		}
 		
 		// Check SSL
@@ -281,20 +281,9 @@ function CloudPayments() {
 		// Callback
         public function handle_callback() {
         	echo '{"code":0}';
-			if (!function_exists('getallheaders')) {
-				function getallheaders() {
-					$headers = [];
-					foreach ($_SERVER as $name => $value) {
-						if (substr($name, 0, 5) == 'HTTP_') {
-							$headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
-						}
-					}
-					return $headers;
-				}
-			}
         	$headers = getallheaders();
         	if ((!isset($headers['Content-HMAC'])) and (!isset($headers['Content-Hmac']))) {
-        		mail(get_option('admin_email'), 'не установлены заголовки', print_r($headers,1));
+        		wp_mail(get_option('admin_email'), 'не установлены заголовки', print_r($headers,1));
         		exit;
         	}
         	$message = file_get_contents('php://input');
@@ -302,8 +291,8 @@ function CloudPayments() {
             //Проверка подписи
 			$s = hash_hmac('sha256', $message, $this->api_pass, true);
 			$hmac = base64_encode($s);
-			if (($headers['Content-HMAC'] && $headers['Content-HMAC'] != $hmac) || ($headers['Content-Hmac'] && $headers['Content-Hmac'] != $hmac)) {
-        		mail(get_option('admin_email'), 'подпись платежа cloudpayments некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     HMAC: '. $hmac);
+			if (!array_key_exists('Content-HMAC',$headers) && !array_key_exists('Content-Hmac',$headers) || (array_key_exists('Content-HMAC',$headers) && $headers['Content-HMAC'] != $hmac) || (array_key_exists('Content-Hmac',$headers) && $headers['Content-Hmac'] != $hmac)) {
+			wp_mail(get_option('admin_email'), 'подпись платежа cloudpayments некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     HMAC: '. $hmac);
         		exit("hmac error");
 			}
 
@@ -311,7 +300,7 @@ function CloudPayments() {
 			global $woocommerce;			
 			$order = new WC_Order( $posted['InvoiceId'] );
 			if ($posted['Amount'] != $order->get_total()) {
-        		mail(get_option('admin_email'), 'сумма заказа некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     order: '. print_r($order,1));
+        		wp_mail(get_option('admin_email'), 'сумма заказа некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     order: '. print_r($order,1));
         		exit("sum error");
 			}
             update_post_meta($posted['InvoiceId'], 'CloudPayments', json_encode($posted, JSON_UNESCAPED_UNICODE));
