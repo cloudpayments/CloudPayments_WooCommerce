@@ -264,7 +264,7 @@ function CloudPayments() {
 		            invoiceId: <?=$order_id?>, //номер заказа 
 		            accountId: '<?=$order->billing_email?>', //идентификатор плательщика
 		            data: 
-		                <? echo (($this->kassa_enabled == 'yes') ? json_encode($kassa_array) : "{}") ?>
+		                <?php echo (($this->kassa_enabled == 'yes') ? json_encode($kassa_array) : "{}") ?>
 		            },
 			        function (options) { // success
 						window.location.replace('<?=$this->get_return_url($order)?>');
@@ -306,7 +306,7 @@ function CloudPayments() {
             update_post_meta($posted['InvoiceId'], 'CloudPayments', json_encode($posted, JSON_UNESCAPED_UNICODE));
 
             if ($posted['Status'] == 'Completed') {
-                // TODO: Пометить заказ, как «Оплаченный» в системе учета магазина
+                //Помечаем заказ, как «Оплаченный» в системе учета магазина
                 $order->payment_complete();
                 $order->add_order_note(__('Заказ успешно оплачен', 'woocommerce'));
                 WC()->cart->empty_cart();
