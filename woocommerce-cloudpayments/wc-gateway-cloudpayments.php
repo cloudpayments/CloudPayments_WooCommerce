@@ -240,7 +240,7 @@ function CloudPayments() {
 			$title = array();
 			$items_array = array();
 			$items = $order->get_items();
-			$shipping_data = array("label"=>"Доставка", "price"=>number_format((float)$order->get_shipping_total()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "quantity"=>"1.00", "amount"=>number_format((float)$order->get_shipping_total()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "vat"=>"18", "ean"=>null);
+			$shipping_data = array("label"=>"Доставка", "price"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "quantity"=>"1.00", "amount"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "vat"=>"18", "ean"=>null);
 			foreach ($items as $item) {
 				if ($this->kassa_enabled == 'yes') {
 				$product = $order->get_product_from_item($item);
@@ -248,7 +248,7 @@ function CloudPayments() {
 				}
 				$title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
 			}
-			if ($this->kassa_enabled == 'yes' && $this->kassa_includeshipping == 'yes' && $order->get_shipping_total() > 0) $items_array[] = $shipping_data;
+			if ($this->kassa_enabled == 'yes' && $this->kassa_includeshipping == 'yes' && $order->get_total_shipping() > 0) $items_array[] = $shipping_data;
 			$kassa_array = array("cloudPayments"=>(array("customerReceipt"=>array("Items"=>$items_array, "taxationSystem"=>$this->kassa_taxsystem, "email"=>$order->billing_email, "phone"=>$order->billing_phone))));
 			$title = implode(', ', $title);
 			?>
