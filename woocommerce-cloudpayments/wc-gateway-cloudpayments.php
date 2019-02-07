@@ -98,7 +98,7 @@ function CloudPayments()
       $this->enabledDMS         =  $this->get_option( 'enabledDMS' );
       $this->DMS_AU_status      =  $this->get_option( 'DMS_AU_status' );
       $this->DMS_CF_status      =  $this->get_option( 'DMS_CF_status' );
-      $this->DMS_CF_status      =  $this->get_option( 'DMS_CF_status' );
+      $this->language           =  $this->get_option( 'language' );
       
     //  $this->DMS_RE_status    =  $this->get_option( 'DMS_RE_status' );
       $this->status_chancel     =  $this->get_option( 'status_chancel' );
@@ -110,7 +110,7 @@ function CloudPayments()
 			$this->description    	= $this->get_option( 'description' );
 			$this->public_id    	  = $this->get_option( 'public_id' );
 			$this->api_pass    	  	= $this->get_option( 'api_pass' );
-			$this->language    	  	= $this->get_option( 'language' );
+			$this->currency    	  	= $this->get_option( 'currency' );
       
 			// Онлайн-касса
 			$this->kassa_enabled    = $this->get_option( 'kassa_enabled' );
