@@ -98,7 +98,7 @@ function CloudPayments()
       $this->enabledDMS         =  $this->get_option( 'enabledDMS' );
       $this->DMS_AU_status      =  $this->get_option( 'DMS_AU_status' );
       $this->DMS_CF_status      =  $this->get_option( 'DMS_CF_status' );
-      $this->language           =  $this->get_option( 'language' );
+     // $this->language           =  $this->get_option( 'language' );
       
     //  $this->DMS_RE_status    =  $this->get_option( 'DMS_RE_status' );
       $this->status_chancel     =  $this->get_option( 'status_chancel' );
