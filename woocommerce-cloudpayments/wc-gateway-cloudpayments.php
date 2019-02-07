@@ -98,7 +98,7 @@ function CloudPayments()
       $this->enabledDMS         =  $this->get_option( 'enabledDMS' );
       $this->DMS_AU_status      =  $this->get_option( 'DMS_AU_status' );
       $this->DMS_CF_status      =  $this->get_option( 'DMS_CF_status' );
-     // $this->language           =  $this->get_option( 'language' );
+      $this->language           =  $this->get_option( 'language' );
       
     //  $this->DMS_RE_status    =  $this->get_option( 'DMS_RE_status' );
       $this->status_chancel     =  $this->get_option( 'status_chancel' );
@@ -385,7 +385,7 @@ function CloudPayments()
 
 			<script src="https://widget.cloudpayments.ru/bundles/cloudpayments"></script>
 			<script>
-				var widget = new cp.CloudPayments({language '<?=$this->language?>'});// язык виджета
+				var widget = new cp.CloudPayments({language: '<?=$this->language?>'});// язык виджета
 		    	widget.<?=$widget_f?>({ // options              <!-- /////////////???????????????  -->
 		            publicId: '<?=$this->public_id?>',  //id из личного кабинета
 		            description: 'Оплата заказа <?=$order_id?>', //назначение
