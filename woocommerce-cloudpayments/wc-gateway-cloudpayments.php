@@ -98,6 +98,7 @@ function CloudPayments()
       $this->enabledDMS         =  $this->get_option( 'enabledDMS' );
       $this->DMS_AU_status      =  $this->get_option( 'DMS_AU_status' );
       $this->DMS_CF_status      =  $this->get_option( 'DMS_CF_status' );
+      $this->language           =  $this->get_option( 'language' );
       
     //  $this->DMS_RE_status    =  $this->get_option( 'DMS_RE_status' );
       $this->status_chancel     =  $this->get_option( 'status_chancel' );
@@ -255,7 +256,24 @@ function CloudPayments()
 						'INR' => __( 'Индийская рупия', 'woocommerce' ),
 						'BRL' => __( 'Бразильский реал', 'woocommerce' ),
 					),
-				),
+                ),
+                'language' => array(
+					'title'       => __( 'Язык виджета', 'woocommerce' ),
+					'type'        => 'select',
+					'class'       => 'wc-enhanced-select',
+					'default'     => 'ru-RU',
+					'options'     => array(
+						'ru-RU' => __( 'Русский', 'woocommerce' ),
+						'en-US' => __( 'Английский', 'woocommerce' ),
+						'lv' => __( 'Латышский', 'woocommerce' ),
+						'az' => __( 'Азербайджанский', 'woocommerce' ),
+						'kk' => __( 'Русский', 'woocommerce' ),
+						'kk-KZ' => __( 'Казахский', 'woocommerce' ),
+						'uk' => __( 'Украинский', 'woocommerce' ),
+						'pl' => __( 'Польский', 'woocommerce' ),
+                        'pt' => __( 'Португальский', 'woocommerce' ),
+                    ),
+                ),
 				'kassa_section' => array(
 					'title'       => __( 'Онлайн-касса', 'woocommerce' ),
 					'type'        => 'title',
@@ -367,7 +385,7 @@ function CloudPayments()
 
 			<script src="https://widget.cloudpayments.ru/bundles/cloudpayments"></script>
 			<script>
-				var widget = new cp.CloudPayments();
+				var widget = new cp.CloudPayments({language: '<?=$this->language?>'});// язык виджета
 		    	widget.<?=$widget_f?>({ // options              <!-- /////////////???????????????  -->
 		            publicId: '<?=$this->public_id?>',  //id из личного кабинета
 		            description: 'Оплата заказа <?=$order_id?>', //назначение
