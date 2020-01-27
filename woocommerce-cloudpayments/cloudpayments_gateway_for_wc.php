@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: CloudPayments Gateway for WooCommerce
- * Plugin URI: https://cloudpayments.ru/wiki/podkluchenie/instrumenti/modules
+ * Plugin URI: https://github.com/cloudpayments/CloudPayments_WooCommerce
  * Description: Extends WooCommerce with CloudPayments Gateway.
- * Version: 2.1
+ * Version: 2.2
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
@@ -11,7 +11,15 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 function cpgwwc_register_post_statuses() 
 {
     register_post_status( 'wc-pay_au', array(
-        'label'                     => _x( 'Payment authorized', 'WooCommerce Order status', 'text_domain' ),
+        'label'                     => _x( 'Платеж авторизован', 'WooCommerce Order status', 'text_domain' ),
+        'public'                    => true,
+        'exclude_from_search'       => false,
+        'show_in_admin_all_list'    => true,
+        'show_in_admin_status_list' => true,
+        'label_count'               => _n_noop( 'Approved (%s)', 'Approved (%s)', 'text_domain' )
+    ) );
+    register_post_status( 'wc-pay_delivered', array(
+        'label'                     => _x( 'Доставлен', 'WooCommerce Order status', 'text_domain' ),
         'public'                    => true,
         'exclude_from_search'       => false,
         'show_in_admin_all_list'    => true,
@@ -30,7 +38,8 @@ add_action( 'init', 'cpgwwc_my_scripts_method' );
 // Add New Order Statuses to WooCommerce
 function cpgwwc_add_order_statuses( $order_statuses )
 {
-    $order_statuses['wc-pay_au'] = _x( 'Payment authorized', 'WooCommerce Order status', 'text_domain' );
+    $order_statuses['wc-pay_au'] = _x( 'Платеж авторизован', 'WooCommerce Order status', 'text_domain' );
+    $order_statuses['wc-pay_delivered'] = _x( 'Доставлен', 'WooCommerce Order status', 'text_domain' );
     return $order_statuses;
 }
 add_filter( 'wc_order_statuses', 'cpgwwc_add_order_statuses' );
@@ -43,10 +52,9 @@ function cpgwwc_CloudPayments()
 	    return;
 	}
 	
-	
 	add_filter( 'woocommerce_payment_gateways', 'cpgwwc_add_cpgwwc' );
-function cpgwwc_add_cpgwwc( $methods )
-  {	
+    function cpgwwc_add_cpgwwc( $methods )
+    {	
 		$methods[] = 'WC_CloudPayments'; 
 		return $methods;
 	}
@@ -80,9 +88,15 @@ function cpgwwc_add_cpgwwc( $methods )
 			$this->delivery_taxtype = $this->get_option( 'delivery_taxtype' );
 			$this->kassa_taxsystem  = $this->get_option( 'kassa_taxsystem' );
 			$this->kassa_skubarcode = $this->get_option( 'kassa_skubarcode' );
+			$this->kassa_method     = $this->get_option( 'kassa_method' );
+            $this->kassa_object     = $this->get_option( 'kassa_object' );
+            $this->status_delivered = $this->get_option( 'status_delivered' );
+            $this->inn              = $this->get_option( 'inn' );
+			
 		    add_action( 'woocommerce_receipt_cpgwwc', 	array( $this, 'payment_page' ) );
 			add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
             add_action( 'woocommerce_api_'. strtolower( get_class( $this ) ), array( $this, 'cpgwwc_handle_callback' ) );
+            add_action('woocommerce_order_status_changed', array( $this, 'cpgwwc_update_order_status'), 10, 3);
 		}
 		
 		// Check SSL
@@ -258,6 +272,13 @@ function cpgwwc_add_cpgwwc( $methods )
 					'label' 	=> __( 'Включить отправку данных для онлайн-кассы (по 54-ФЗ)', 'woocommerce' ),
 					'default' 	=> 'no'
 				),
+				'inn' => array(
+					'title' 		=> __( 'ИНН', 'woocommerce' ),
+					'type' 			=> 'text',
+					'description'	=> '',
+					'default' 		=> '',
+					'desc_tip' 		=> true,
+                ),
 				'kassa_taxtype' => array(
 					'title'       => __( 'Ставка НДС', 'woocommerce' ),
 					'type'        => 'select',
@@ -306,6 +327,57 @@ function cpgwwc_add_cpgwwc( $methods )
 						'5' => __( 'Патентная система налогообложения', 'woocommerce' ),
 					),
 				),
+				'kassa_method' => array(
+					'title'       => __( 'Способ расчета', 'woocommerce' ),
+					'type'        => 'select',
+					'class'       => 'wc-enhanced-select',
+					'description' => __( 'Выберите способ расчета', 'woocommerce' ),
+					'default'     => '1',
+					'desc_tip'    => true,
+					'options'     => array(
+						'0' => __( 'Способ расчета не передается', 'woocommerce' ),
+						'1' => __( 'Предоплата 100%', 'woocommerce' ),
+						'2' => __( 'Предоплата', 'woocommerce' ),
+						'3' => __( 'Аванс', 'woocommerce' ),
+						'4' => __( 'Полный расчёт', 'woocommerce' ),
+						'5' => __( 'Частичный расчёт и кредит', 'woocommerce' ),
+						'6' => __( 'Передача в кредит', 'woocommerce' ),
+						'7' => __( 'Оплата кредита', 'woocommerce' ),
+					),
+				),
+				'kassa_object' => array(
+					'title'       => __( 'Предмет расчета', 'woocommerce' ),
+					'type'        => 'select',
+					'class'       => 'wc-enhanced-select',
+					'description' => __( 'Выберите предмет расчета', 'woocommerce' ),
+					'default'     => '1',
+					'desc_tip'    => true,
+					'options'     => array(
+						'0' => __( 'Предмет расчета не передается', 'woocommerce' ),
+						'1' => __( 'Товар', 'woocommerce' ),
+						'2' => __( 'Подакцизный товар', 'woocommerce' ),
+						'3' => __( 'Работа', 'woocommerce' ),
+						'4' => __( 'Услуга', 'woocommerce' ),
+						'5' => __( 'Ставка азартной игры', 'woocommerce' ),
+						'6' => __( 'Выигрыш азартной игры', 'woocommerce' ),
+						'7' => __( 'Лотерейный билет', 'woocommerce' ),
+						'8' => __( 'Выигрыш лотереи', 'woocommerce' ),
+						'9' => __( 'Предоставление РИД', 'woocommerce' ),
+						'10' => __( 'Платеж', 'woocommerce' ),
+						'11' => __( 'Агентское вознаграждение', 'woocommerce' ),
+						'12' => __( 'Составной предмет расчета', 'woocommerce' ),
+						'13' => __( 'Иной предмет расчета', 'woocommerce' ),
+					),
+				),
+				'status_delivered' => array(
+					'title'       => __( 'Статус доставки', 'woocommerce' ),
+					'type'        => 'select',
+					'class'       => 'wc-enhanced-select',
+					'description' => __( 'Отдельный статус доставки необходим при формировании двух чеков: один чек - при поступлении денег от покупателя, второй при отгрузке товара. Отправка второго чека возможна при следующих способах расчета: Предоплата, Предоплата 100%, Аванс', 'woocommerce' ),
+					'default'     => 'wc-pay_delivered',
+					'desc_tip'    => true,
+					'options'     => $array_status,
+				),
 				'kassa_skubarcode' => array(
 								'title' 	=> __( 'Действие со штрих-кодом', 'woocommerce' ),
 								'type' 		=> 'checkbox',
@@ -336,16 +408,21 @@ function cpgwwc_add_cpgwwc( $methods )
 			$title = array();
 			$items_array = array();
 			$items = $order->get_items();
-			$shipping_data = array("label"=>"Доставка", "price"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "quantity"=>"1.00",	"amount"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "vat"=>($this->delivery_taxtype == "null") ? null : $this->delivery_taxtype, "ean"=>null);
+			$shipping_data = array("label"=>"Доставка", "price"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "quantity"=>"1.00",	"amount"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), 
+			"vat"=>($this->delivery_taxtype == "null") ? null : $this->delivery_taxtype, 'method'=> (int)$this->kassa_method, 'object'=>4, "ean"=>null);
 			foreach ($items as $item) {
 				if ($this->kassa_enabled == 'yes') {
 				    $product = $order->get_product_from_item($item);
-				    $items_array[] = array("label"=>$item['name'], "price"=>number_format((float)$product->get_price(), 2, '.', ''), "quantity"=>number_format((float)$item['quantity'], 2, '.', ''), "amount"=>number_format((float)$item['total']+abs((float)$item['total_tax']), 2, '.', ''), "vat"=>($this->kassa_taxtype == "null") ? null : $this->kassa_taxtype, "ean"=>($this->kassa_skubarcode == 'yes') ? ((strlen($product->get_sku()) < 1) ? null : $product->get_sku()) : null);
+				    $items_array[] = array("label"=>$item['name'], "price"=>number_format((float)$product->get_price(), 2, '.', ''), "quantity"=>number_format((float)$item['quantity'], 2, '.', ''), 
+				    "amount"=>number_format((float)$item['total']+abs((float)$item['total_tax']), 2, '.', ''), "vat"=>($this->kassa_taxtype == "null") ? null : $this->kassa_taxtype, 
+				    'method'=> (int)$this->kassa_method, 'object'=> (int)$this->kassa_object,
+				    "ean"=>($this->kassa_skubarcode == 'yes') ? ((strlen($product->get_sku()) < 1) ? null : $product->get_sku()) : null);
 				}
 				$title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
 			}
 			if ($this->kassa_enabled == 'yes' && $order->get_total_shipping() > 0) $items_array[] = $shipping_data;
-			$kassa_array = array("cloudPayments"=>(array("customerReceipt"=>array("Items"=>$items_array, "taxationSystem"=>$this->kassa_taxsystem, 'calculationPlace'=>'www.'.$_SERVER['SERVER_NAME'], "email"=>$order->billing_email, "phone"=>$order->billing_phone))));
+			$kassa_array = array("cloudPayments"=>(array("customerReceipt"=>array("Items"=>$items_array, "taxationSystem"=>$this->kassa_taxsystem, 'calculationPlace'=>'www.'.$_SERVER['SERVER_NAME'], 
+			"email"=>$order->billing_email, "phone"=>$order->billing_phone))));
 			$title = implode(', ', $title);
       
             $widget_f='charge';
@@ -424,6 +501,11 @@ function cpgwwc_add_cpgwwc( $methods )
                   return $this->cpgwwc_processRefundAction($request);
                   die();
               } 
+              else if ($action == 'receipt')
+              {
+                  return $this->cpgwwc_processReceiptAction($request);
+                  die();
+              } 
               else
               {
       
@@ -432,6 +514,28 @@ function cpgwwc_add_cpgwwc( $methods )
                   exit('{"code":0}');
               }
       	}
+        
+        private function cpgwwc_processReceiptAction($request)   //ok
+        {     
+             
+            //$request['InvoiceId']=$_POST['InvoiceId'];
+            	
+            if ($request['Type'] == 'IncomeReturn') {
+                $Type = 'возврата прихода';
+            }
+            elseif ($request['Type'] == 'Income') {
+                $Type = 'прихода';
+            }
+            $url = $request['Url'];
+            $note= 'Ссылка на чек '.$Type.': '.$url;
+            $order=self::cpgwwc_get_order($request);
+            $var = $order->add_order_note( $note, 1 );
+            $order->save();
+            $data['CODE'] = 0;                         					
+            echo json_encode($data);  
+            exit;
+       
+        }
         
         private function cpgwwc_processConfirmAction($request)   //ok
         {     
@@ -628,13 +732,13 @@ function cpgwwc_add_cpgwwc( $methods )
         }
         public function cpgwwc_addError($text)  
         {
-              $debug=true;
+              $debug=false;
               if ($debug)
               {
                 $file=plugin_dir_url( __FILE__ ).'log.txt';
                 $current = file_get_contents($file);
                 $current .= date("d-m-Y H:i:s").":".$text."\n";
-                //file_put_contents($file, $current);
+                file_put_contents($file, $current);
               }
         }
         
@@ -693,5 +797,161 @@ function cpgwwc_add_cpgwwc( $methods )
           }
           exit;
         }
+        
+        public function cpgwwc_update_order_status($order_id,$old_status,$new_status) //OK
+        {   
+            if ($this->kassa_enabled == 'yes'):
+                $this->cpgwwc_addError('update_order_statuskassa');
+                $this->cpgwwc_addError('payment_methods');
+                $this->cpgwwc_addError($this->status_pay."==wc-".$new_status);
+                $request['InvoiceId']=$order_id;
+                $order=self::cpgwwc_get_order($request);
+                if ("wc-".$new_status == $this->status_delivered && ((int)$this->kassa_method == 1 || (int)$this->kassa_method == 2 || (int)$this->kassa_method == 3)):
+                    self::cpgwwc_addError("Send kkt Income!");
+                    $this->cpgwwc_addError('request');
+                    $this->cpgwwc_addError(print_r($request,1));
+                    self::cpgwwc_SendReceipt($order, 'Income',$old_status,$new_status);
+                elseif ($this->status_chancel=="wc-".$new_status):
+                    self::cpgwwc_addError("Send kkt IncomeReturn!");
+                    self::cpgwwc_SendReceipt($order, 'IncomeReturn',$old_status,$new_status);
+                endif;
+            endif;
+        }
+        
+        public function cpgwwc_SendReceipt($order,$type,$old_status,$new_status)
+        {
+            self::cpgwwc_addError('SendReceipt!!');
+            $cart=$order->get_items();
+            $total_amount = 0;
+        
+        	foreach ($cart as $item_id => $item_data):
+                $product = $item_data->get_product();
+                if ("wc-".$new_status == $this->status_delivered) {
+                    $method = 4;
+                }
+                else {
+                    $method = (int)$this->kassa_method;
+                };
+                $items[]=array(
+                    'label'    => $product->get_name(),
+                    'price'    => number_format($product->get_price(),2,".",''),
+                    'quantity' => $item_data->get_quantity(),
+                    'amount'   => number_format(floatval($item_data->get_total()),2,".",''),
+                    'vat'      => $this->kassa_taxtype,
+                    'method'   => $method,
+                    'object'   => (int)$this->kassa_object,
+                ); 
+        
+                $total_amount = $total_amount +  number_format(floatval($item_data->get_total()),2,".",'');
+        
+            endforeach; 
+            
+            if ($order->get_total_shipping()):
+                $items[]=array(
+                    'label'=>"Доставка",
+                    'price'=>$order->get_total_shipping(),
+                    'quantity'=>1,
+                    'amount'=>$order->get_total_shipping(),
+                    'vat'=>$this->delivery_taxtype, 
+                    'method'   => $method,
+                    'object'   => 4,
+                ); 
+            
+                $total_amount = $total_amount + number_format(floatval($order->get_total_shipping()),2,".",'');
+            
+            endif; 
+            
+            $data['cloudPayments']['customerReceipt']['Items']=$items;
+            $data['cloudPayments']['customerReceipt']['taxationSystem']=$this->kassa_taxsystem; 
+            $data['cloudPayments']['customerReceipt']['calculationPlace']='www.'.$_SERVER['SERVER_NAME'];
+            $data['cloudPayments']['customerReceipt']['email']=$order->get_billing_email(); 
+            $data['cloudPayments']['customerReceipt']['phone']=$order->get_billing_phone();  
+            $data['cloudPayments']['customerReceipt']['amounts']['electronic']=$total_amount;
+      
+            if ("wc-".$new_status == $this->status_delivered) {
+                $data['cloudPayments']['customerReceipt']['amounts']['electronic']=0;
+                $data['cloudPayments']['customerReceipt']['amounts']['advancePayment']=$total_amount;
+            }
+      
+  		    $aData = array(
+  			    'Inn' => $this->inn,
+      			'InvoiceId' => $order->get_id(), //номер заказа, необязательный
+      			'AccountId' => $order->get_user_id(),
+      			'Type' => $type,
+      			'CustomerReceipt' => $data['cloudPayments']['customerReceipt']
+  	    	);
+            $API_URL='https://api.cloudpayments.ru/kkt/receipt';
+            self::cpgwwc_send_request($API_URL,$aData);
+            self::cpgwwc_addError("kkt/receipt");
+        }
+        
+        public function cpgwwc_send_request($API_URL,$request)  ///OK
+        {
+            $request2=self::cpgwwc_cur_json_encode($request);
+            $str=date("d-m-Y H:i:s").$request['Type'].$request['InvoiceId'].$request['AccountId'].$request['CustomerReceipt']['email'];
+            $reque=md5($str);
+            $auth = base64_encode($this->public_id. ":" . $this->api_pass); 
+            wp_remote_post( $API_URL, array(
+	            'timeout'     => 30,
+	            'redirection' => 5,
+	            'httpversion' => '1.0',
+	            'blocking'    => true,
+	            'headers'     => array('Authorization' => 'Basic '.$auth, 'Content-Type' => 'application/json', 'X-Request-ID' => $reque),
+	            'body'        => $request2,
+	            'cookies'     => array()
+            ) );
+        }    
+        
+        function cpgwwc_cur_json_encode($a=false)      /////ok
+        {
+            if (is_null($a) || is_resource($a)) {
+                return 'null';
+            }
+            if ($a === false) {
+                return 'false';
+            }
+            if ($a === true) {
+                return 'true';
+            }
+        
+            if (is_scalar($a)) {
+                if (is_float($a)) {
+                    $a = str_replace(',', '.', strval($a));
+                }
+    
+                static $jsonReplaces = array(
+                    array("\\", "/", "\n", "\t", "\r", "\b", "\f", '"'),
+                    array('\\\\', '\\/', '\\n', '\\t', '\\r', '\\b', '\\f', '\"')
+                );
+    
+                return '"' . str_replace($jsonReplaces[0], $jsonReplaces[1], $a) . '"';
+            }
+    
+            $isList = true;
+    
+            for ($i = 0, reset($a); $i < count($a); $i++, next($a)) {
+                if (key($a) !== $i) {
+                    $isList = false;
+                    break;
+                }
+            }
+    
+            $result = array();
+        
+            if ($isList) {
+                foreach ($a as $v) {
+                    $result[] = self::cpgwwc_cur_json_encode($v);
+                }
+        
+                return '[ ' . join(', ', $result) . ' ]';
+            }
+            else {
+                foreach ($a as $k => $v) {
+                    $result[] = self::cpgwwc_cur_json_encode($k) . ': ' . self::cpgwwc_cur_json_encode($v);
+                }
+    
+                return '{ ' . join(', ', $result) . ' }';
+            }
+        }   
 	}
 }
