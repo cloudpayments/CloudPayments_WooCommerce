@@ -598,7 +598,7 @@ function cpgwwc_CloudPayments()
             
             $data['CODE'] = 0;
             self::cpgwwc_OrderSetStatus($order,'wc-pending');
-            return $result;
+            echo json_encode($data);
         }
         
         public function cpgwwc_OrderSetStatus($order,$status)
