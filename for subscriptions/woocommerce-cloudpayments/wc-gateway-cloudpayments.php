@@ -3,7 +3,7 @@
  * Plugin Name: WooCommerce CloudPayments Gateway
  * Plugin URI: http://woothemes.com/woocommerce
  * Description: Extends WooCommerce with CloudPayments Gateway.
- * Version: 2.0
+ * Version: 2.0.2
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
@@ -109,7 +109,45 @@ function CloudPayments()
 			add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
             add_action( 'woocommerce_api_'. strtolower( get_class( $this ) ), array( $this, 'handle_callback' ) );
             add_action('woocommerce_order_status_changed', array( $this, 'update_order_status'), 10, 3);
+	        add_action('woocommerce_subscription_status_updated', array($this, 'cp_change_status_subscription'), 10, 3);
 		}
+		public function cp_change_status_subscription($subscription, $new_status, $old_status) {
+            if ($new_status == 'pending-cancel' || $new_status == 'cancelled') {
+                
+                require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+                if (is_plugin_active('woocommerce-subscriptions/woocommerce-subscriptions.php')) {
+                    
+                    $subscription_orders = $subscription->get_related_orders($return_fields = 'all', $order_type = 'parent');
+                    foreach ($subscription_orders as $subscription_order) {
+                        
+                        $meta_data = $subscription_order->get_meta_data();
+                        foreach ($meta_data as $meta_key) {
+                            
+                            if ($meta_key->key == "SubscriptionId") {
+                                $sid = $meta_key->value;
+                                break;
+                            };
+                        };
+                    };
+                };
+                
+                $request = array(
+                    'Id' => $sid
+                );
+                $url = 'https://api.cloudpayments.ru/subscriptions/cancel';
+                $accesskey = $this->public_id;
+                $access_psw = $this->api_pass;
+                $ch = curl_init($url);
+                curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+                curl_setopt($ch, CURLOPT_USERPWD, $accesskey . ":" . $access_psw);
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
+                $content = curl_exec($ch);
+                curl_close($ch);
+            }
+        }
 		// Check SSL
 		public function cp_ssl_check() {			
 			if ( get_option( 'woocommerce_force_ssl_checkout' ) == 'no' && $this->enabled == 'yes' ) {
@@ -1210,6 +1248,3 @@ function CloudPayments()
         }
 	}
 }
-
-
-
