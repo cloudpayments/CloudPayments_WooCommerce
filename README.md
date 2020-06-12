@@ -108,7 +108,7 @@ $items[] = apply_filters( 'woocommerce_cpgwwc_before_send_receipt_delivery_item'
 
 ```php
 $aData = apply_filters( 'woocommerce_cpgwwc_before_send_receipt_data', array(
-    'Inn'             => $this->inn,
+	'Inn'             => $this->inn,
 	'InvoiceId'       => $order->get_id(), //номер заказа, необязательный
 	'AccountId'       => $order->get_user_id(),
 	'Type'            => $type,
