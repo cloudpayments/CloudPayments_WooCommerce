@@ -77,8 +77,44 @@ _Отдельный статус доставки необходим при фо
 ## Для разработчиков
 
 Фильтр `woocommerce_cpgwwc_before_send_receipt_product_item` позволяет изменить данные товара перед добавлением его чек.
+
+```php
+$items[] = apply_filters( 'woocommerce_cpgwwc_before_send_receipt_product_item', array(
+	'label'    => $product->get_name(),
+	'price'    => number_format($product->get_price(),2,".",''),
+	'quantity' => $item_data->get_quantity(),
+	'amount'   => number_format(floatval($item_data->get_total()),2,".",''),
+	'vat'      => $this->kassa_taxtype,
+	'method'   => $method,
+	'object'   => (int)$this->kassa_object,
+), $product, $item_id, $item_data, $method, $this );
+```
+
 Фильтр `woocommerce_cpgwwc_before_send_receipt_delivery_item` позволяет изменить данные метода доставки перед добавлением его чек.
+
+```php
+$items[] = apply_filters( 'woocommerce_cpgwwc_before_send_receipt_delivery_item', array(
+	'label'    => "Доставка",
+	'price'    => $order->get_total_shipping(),
+	'quantity' => 1,
+	'amount'   => $order->get_total_shipping(),
+	'vat'      => $this->delivery_taxtype,
+	'method'   => $method,
+	'object'   => 4,
+), $order, $this );
+```
+
 Фильтр `woocommerce_cpgwwc_before_send_receipt_data` позволяет изменить данные всего объекта чека перед его отправкой в CloudPayments.
+
+```php
+$aData = apply_filters( 'woocommerce_cpgwwc_before_send_receipt_data', array(
+    'Inn'             => $this->inn,
+	'InvoiceId'       => $order->get_id(), //номер заказа, необязательный
+	'AccountId'       => $order->get_user_id(),
+	'Type'            => $type,
+	'CustomerReceipt' => $data['cloudPayments']['customerReceipt']
+), $order, $this );
+```
 
 
 == Changelog ==
