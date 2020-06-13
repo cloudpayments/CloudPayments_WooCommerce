@@ -408,18 +408,38 @@ function cpgwwc_CloudPayments()
 			$title = array();
 			$items_array = array();
 			$items = $order->get_items();
-			$shipping_data = array("label"=>"Доставка", "price"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "quantity"=>"1.00",	"amount"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''),
-			"vat"=>($this->delivery_taxtype == "null") ? null : $this->delivery_taxtype, 'method'=> (int)$this->kassa_method, 'object'=>4, "ean"=>null);
-			foreach ($items as $item) {
-				if ($this->kassa_enabled == 'yes') {
-				    $product = $order->get_product_from_item($item);
-				    $items_array[] = array("label"=>$item['name'], "price"=>number_format((float)$product->get_price(), 2, '.', ''), "quantity"=>number_format((float)$item['quantity'], 2, '.', ''),
-				    "amount"=>number_format((float)$item['total']+abs((float)$item['total_tax']), 2, '.', ''), "vat"=>($this->kassa_taxtype == "null") ? null : $this->kassa_taxtype,
-				    'method'=> (int)$this->kassa_method, 'object'=> (int)$this->kassa_object,
-				    "ean"=>($this->kassa_skubarcode == 'yes') ? ((strlen($product->get_sku()) < 1) ? null : $product->get_sku()) : null);
-				}
-				$title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
-			}
+
+            $shipping_data = apply_filters( 'woocommerce_cpgwwc_payment_page_delivery_item', array(
+                'label'    => 'Доставка',
+                'price'    => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+                'quantity' => '1.00',
+                'amount'   => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+                'vat'      => ( $this->delivery_taxtype == 'null' ) ? null : $this->delivery_taxtype,
+                'method'   => (int) $this->kassa_method,
+                'object'   => 4,
+                'ean'      => null,
+            ), $order, $this );
+
+            foreach ( $items as $item_id => $item_data ) {
+                if ( $this->kassa_enabled == 'yes' ) {
+
+                    $product = $order->get_product_from_item( $item_data );
+
+                    $items_array[] = apply_filters( 'woocommerce_cpgwwc_payment_page_product_item', array(
+                        'label'    => $item_data['name'],
+                        'price'    => number_format( (float) $product->get_price(), 2, '.', '' ),
+                        'quantity' => number_format( (float) $item_data['quantity'], 2, '.', '' ),
+                        'amount'   => number_format( (float) $item_data['total'] + abs( (float) $item_data['total_tax'] ), 2, '.', '' ),
+                        'vat'      => ( $this->kassa_taxtype == "null" ) ? null : $this->kassa_taxtype,
+                        'method'   => (int) $this->kassa_method,
+                        'object'   => (int) $this->kassa_object,
+                        'ean'      => ( $this->kassa_skubarcode == 'yes' ) ? ( (strlen( $product->get_sku() ) < 1 ) ? null : $product->get_sku() ) : null,
+                    ), $product, $item_id, $item_data, $this );
+                }
+
+                $title[] = $item_data['name'] . ( isset( $item_data['pa_ver'] ) ? ' ' . $item_data['pa_ver'] : '' );
+            }
+
 			if ($this->kassa_enabled == 'yes' && $order->get_total_shipping() > 0) $items_array[] = $shipping_data;
 			$kassa_array = array("cloudPayments"=>(array("customerReceipt"=>array("Items"=>$items_array, "taxationSystem"=>$this->kassa_taxsystem, 'calculationPlace'=>'www.'.$_SERVER['SERVER_NAME'],
 			"email"=>$order->billing_email, "phone"=>$order->billing_phone))));

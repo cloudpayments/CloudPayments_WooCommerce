@@ -76,31 +76,65 @@ _Отдельный статус доставки необходим при фо
 
 ## Для разработчиков
 
-Фильтр `woocommerce_cpgwwc_before_send_receipt_product_item` позволяет изменить данные товара перед добавлением его чек.
+### Формирование данных заказа на странице оплаты
+
+Фильтр `woocommerce_cpgwwc_payment_page_delivery_item` позволяет изменить данные доставки перед перед оплатой.
+
+```php
+$shipping_data = apply_filters( 'woocommerce_cpgwwc_payment_page_shipping_item', array(
+  'label'    => 'Доставка',
+  'price'    => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+  'quantity' => '1.00',
+  'amount'   => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+  'vat'      => ( $this->delivery_taxtype == 'null' ) ? null : $this->delivery_taxtype,
+  'method'   => (int) $this->kassa_method,
+  'object'   => 4,
+  'ean'      => null,
+), $order, $this );
+```
+
+Фильтр `woocommerce_cpgwwc_payment_page_product_item` позволяет изменить данные товара перед оплатой заказа.
+
+```php
+$items_array[] = apply_filters( 'woocommerce_cpgwwc_payment_page_product_item', array(
+  'label'    => $item_data['name'],
+  'price'    => number_format( (float) $product->get_price(), 2, '.', '' ),
+  'quantity' => number_format( (float) $item_data['quantity'], 2, '.', '' ),
+  'amount'   => number_format( (float) $item_data['total'] + abs( (float) $item_data['total_tax'] ), 2, '.', '' ),
+  'vat'      => ( $this->kassa_taxtype == "null" ) ? null : $this->kassa_taxtype,
+  'method'   => (int) $this->kassa_method,
+  'object'   => (int) $this->kassa_object,
+  'ean'      => ( $this->kassa_skubarcode == 'yes' ) ? ( (strlen( $product->get_sku() ) < 1 ) ? null : $product->get_sku() ) : null,
+), $product, $item_id, $item_data, $this );
+```
+
+### Формирование данных заказа на при смене статуса заказа
+
+Фильтр `woocommerce_cpgwwc_before_send_receipt_product_item` позволяет изменить данные товара перед добавлением его в чек.
 
 ```php
 $items[] = apply_filters( 'woocommerce_cpgwwc_before_send_receipt_product_item', array(
-	'label'    => $product->get_name(),
-	'price'    => number_format($product->get_price(),2,".",''),
-	'quantity' => $item_data->get_quantity(),
-	'amount'   => number_format(floatval($item_data->get_total()),2,".",''),
-	'vat'      => $this->kassa_taxtype,
-	'method'   => $method,
-	'object'   => (int)$this->kassa_object,
+  'label'    => $product->get_name(),
+  'price'    => number_format($product->get_price(),2,".",''),
+  'quantity' => $item_data->get_quantity(),
+  'amount'   => number_format(floatval($item_data->get_total()),2,".",''),
+  'vat'      => $this->kassa_taxtype,
+  'method'   => $method,
+  'object'   => (int)$this->kassa_object,
 ), $product, $item_id, $item_data, $method, $this );
 ```
 
-Фильтр `woocommerce_cpgwwc_before_send_receipt_delivery_item` позволяет изменить данные метода доставки перед добавлением его чек.
+Фильтр `woocommerce_cpgwwc_before_send_receipt_delivery_item` позволяет изменить данные метода доставки перед добавлением его в чек.
 
 ```php
 $items[] = apply_filters( 'woocommerce_cpgwwc_before_send_receipt_delivery_item', array(
-	'label'    => "Доставка",
-	'price'    => $order->get_total_shipping(),
-	'quantity' => 1,
-	'amount'   => $order->get_total_shipping(),
-	'vat'      => $this->delivery_taxtype,
-	'method'   => $method,
-	'object'   => 4,
+  'label'    => "Доставка",
+  'price'    => $order->get_total_shipping(),
+  'quantity' => 1,
+  'amount'   => $order->get_total_shipping(),
+  'vat'      => $this->delivery_taxtype,
+  'method'   => $method,
+  'object'   => 4,
 ), $order, $this );
 ```
 
@@ -108,11 +142,11 @@ $items[] = apply_filters( 'woocommerce_cpgwwc_before_send_receipt_delivery_item'
 
 ```php
 $aData = apply_filters( 'woocommerce_cpgwwc_before_send_receipt_data', array(
-	'Inn'             => $this->inn,
-	'InvoiceId'       => $order->get_id(), //номер заказа, необязательный
-	'AccountId'       => $order->get_user_id(),
-	'Type'            => $type,
-	'CustomerReceipt' => $data['cloudPayments']['customerReceipt']
+  'Inn'             => $this->inn,
+  'InvoiceId'       => $order->get_id(), //номер заказа, необязательный
+  'AccountId'       => $order->get_user_id(),
+  'Type'            => $type,
+  'CustomerReceipt' => $data['cloudPayments']['customerReceipt'],
 ), $order, $this );
 ```
 
