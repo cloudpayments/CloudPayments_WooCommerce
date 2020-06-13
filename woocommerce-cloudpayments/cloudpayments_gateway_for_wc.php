@@ -396,7 +396,7 @@ function cpgwwc_CloudPayments()
 
 			return array(
 				'result'    => 'success',
-				'redirect'  => add_query_arg( 'key', $order->order_key, add_query_arg( 'order-pay', $order_id, $order->get_checkout_payment_url( true ) ) )
+				'redirect'  => add_query_arg( 'key', $order->get_order_key(), add_query_arg( 'order-pay', $order_id, $order->get_checkout_payment_url( true ) ) )
 			);
 		}
 
@@ -442,7 +442,7 @@ function cpgwwc_CloudPayments()
 
 			if ($this->kassa_enabled == 'yes' && $order->get_total_shipping() > 0) $items_array[] = $shipping_data;
 			$kassa_array = array("cloudPayments"=>(array("customerReceipt"=>array("Items"=>$items_array, "taxationSystem"=>$this->kassa_taxsystem, 'calculationPlace'=>'www.'.$_SERVER['SERVER_NAME'],
-			"email"=>$order->billing_email, "phone"=>$order->billing_phone))));
+			"email"=>$order->get_billing_email(), "phone"=>$order->get_billing_phone()))));
 			$title = implode(', ', $title);
 
             $widget_f='charge';
@@ -460,7 +460,7 @@ function cpgwwc_CloudPayments()
 		            currency: '<?=$this->currency?>',
 		            skin: '<?=$this->skin?>',
 		            invoiceId: <?=$order_id?>,
-		            accountId: '<?=$order->billing_email?>',
+		            accountId: '<?=$order->get_billing_email()?>',
 		            data:
 		                <?php echo (($this->kassa_enabled == 'yes') ? json_encode($kassa_array) : "{}") ?>
 		            },
