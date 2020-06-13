@@ -81,7 +81,7 @@ _Отдельный статус доставки необходим при фо
 Фильтр `woocommerce_cpgwwc_payment_page_delivery_item` позволяет изменить данные доставки перед перед оплатой.
 
 ```php
-$shipping_data = apply_filters( 'woocommerce_cpgwwc_payment_page_shipping_item', array(
+$shipping_data = apply_filters( 'woocommerce_cpgwwc_payment_page_delivery_item', array(
   'label'    => 'Доставка',
   'price'    => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
   'quantity' => '1.00',
