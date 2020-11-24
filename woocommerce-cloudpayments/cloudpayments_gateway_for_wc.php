@@ -3,13 +3,13 @@
  * Plugin Name: CloudPayments Gateway for WooCommerce
  * Plugin URI: https://github.com/cloudpayments/CloudPayments_WooCommerce
  * Description: Extends WooCommerce with CloudPayments Gateway.
- * Version: 2.2
+ * Version: 3.0
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // Register New Order Statuses
 function cpgwwc_register_post_statuses() 
-{
+{        
     register_post_status( 'wc-pay_au', array(
         'label'                     => _x( 'Платеж авторизован', 'WooCommerce Order status', 'text_domain' ),
         'public'                    => true,
@@ -67,7 +67,18 @@ function cpgwwc_CloudPayments()
 			$this->icon 			  =  plugin_dir_url( __FILE__ ) . 'visa-mastercard.png';
 			$this->method_title       =  __( 'CloudPayments', 'woocommerce' );
 			$this->method_description =  'CloudPayments – самый простой и удобный способ оплаты. Комиссий нет.';
-			$this->supports           =  array( 'products','pre-orders' );
+			$this->supports = array(
+                'pre-orders',
+                'products',
+                'subscriptions',
+                'subscription_cancellation',
+                'subscription_suspension',
+                'subscription_reactivation',
+                'subscription_amount_changes',
+                'subscription_date_changes',
+                'multiple_subscriptions',
+                'tokenization'
+            );
             $this->enabled            =  $this->get_option( 'enabled' );
             $this->enabledDMS         =  $this->get_option( 'enabledDMS' );
             $this->DMS_AU_status      =  $this->get_option( 'DMS_AU_status' );
@@ -97,7 +108,82 @@ function cpgwwc_CloudPayments()
 			add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
             add_action( 'woocommerce_api_'. strtolower( get_class( $this ) ), array( $this, 'cpgwwc_handle_callback' ) );
             add_action('woocommerce_order_status_changed', array( $this, 'cpgwwc_update_order_status'), 10, 3);
+			add_action('woocommerce_scheduled_subscription_payment_cpgwwc', array($this, 'cpgwwc_scheduled_subscription_payment'), 100, 2);
 		}
+		
+		public function cpgwwc_scheduled_subscription_payment( $amount_to_charge, $order ) {
+		
+            global $woocommerce;
+            $order_id = $order->get_id();
+            $title = array();
+            $items_array = array();
+            $items = $order->get_items();
+            $shipping_data = array("label"=>"Доставка", "price"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "quantity"=>"1.00", "amount"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), 
+            "vat"=>($this->delivery_taxtype == "null") ? null : $this->delivery_taxtype, 'method'=> (int)$this->kassa_method, 'object'=>4, "ean"=>null);
+            foreach ($items as $item) {
+                if ($this->kassa_enabled == 'yes') {
+                    $product = $order->get_product_from_item($item);
+                    $items_array[] = array("label"=>$item['name'], "price"=>number_format((float)$product->get_price(), 2, '.', ''), "quantity"=>number_format((float)$item['quantity'], 2, '.', ''), 
+                    "amount"=>number_format((float)$item['total']+abs((float)$item['total_tax']), 2, '.', ''), "vat"=>($this->kassa_taxtype == "null") ? null : $this->kassa_taxtype, 
+                    'method'=> (int)$this->kassa_method, 'object'=> (int)$this->kassa_object,
+                    "ean"=>($this->kassa_skubarcode == 'yes') ? ((strlen($product->get_sku()) < 1) ? null : $product->get_sku()) : null);
+                }
+                $title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
+            }
+            if ($this->kassa_enabled == 'yes' && $order->get_total_shipping() > 0) $items_array[] = $shipping_data;
+            $kassa_array = array("cloudPayments"=>(array("customerReceipt"=>array("Items"=>$items_array, "taxationSystem"=>$this->kassa_taxsystem, 'calculationPlace'=>'www.'.$_SERVER['SERVER_NAME'], 
+            "email"=>$order->billing_email, "phone"=>$order->billing_phone))));
+            $title = implode(', ', $title);
+      
+            $widget_f='charge';
+            if ($this->enabledDMS!='no')
+            {
+                $widget_f='auth';
+            }
+ 
+            $accesskey = $this->public_id;
+            $access_psw = $this->api_pass;
+            $user_id = $order->get_user_id();
+            
+            $token = WC_Payment_Tokens::get_customer_default_token( $user_id );    
+            if (!$token || $token->get_gateway_id() != 'cpgwwc') {
+                $tokens = WC_Payment_Tokens::get_customer_tokens( $user_id, 'cpgwwc' );
+                if ($tokens) {
+                    foreach ($tokens as $token) {
+                        if ($token->get_token())
+                        break;
+                    }
+                }
+                else $token = null;
+            }
+            
+            if ($token) {
+                $request = array(
+                    'Token'                => $token->get_token(),
+                    'Amount'               => $order->get_total(),
+                    'Currency'             => $this->currency,
+                    'InvoiceId'            => $order->get_id(),
+                    'AccountId'            => $user_id,
+                    'Email'                => $order->billing_email,
+                    'Description'          => 'Оплата заказа № '.$order_id,
+                    'IpAddress'            => $_SERVER['REMOTE_ADDR'],
+                    'JsonData'             => $kassa_array
+                );
+            
+                //отправляем запрос        
+				$auth = base64_encode($this->public_id. ":" . $this->api_pass); 
+				wp_remote_post( 'https://api.cloudpayments.ru/payments/tokens/'.$widget_f, 
+					array(
+						'timeout'     => 30,
+						'redirection' => 5,
+						'httpversion' => '1.0',
+						'blocking'    => true,
+						'headers'     => array('Authorization' => 'Basic '.$auth, 'Content-Type' => 'application/json'),
+						'body'        => json_encode($request, JSON_UNESCAPED_UNICODE)
+					) 		
+				);
+            }   
+        }
 		
 		// Check SSL
 		public function cpgwwc_ssl_check() {			
@@ -390,71 +476,138 @@ function cpgwwc_CloudPayments()
 		// Process payment
 		public function process_payment( $order_id ) {
 			
-			global $woocommerce;
-			
-			$order = new WC_Order( $order_id );
-				
-			return array(
-				'result'    => 'success',
-				'redirect'  => add_query_arg( 'key', $order->order_key, add_query_arg( 'order-pay', $order_id, $order->get_checkout_payment_url( true ) ) )
-			);
-		}
-		
-		// Output iframe
-		public function payment_page( $order_id ) {  
-            $this->cpgwwc_addError("Проверка заказа");
 			global $woocommerce;			
-			$order = new WC_Order( $order_id );
-			$title = array();
-			$items_array = array();
-			$items = $order->get_items();
-			$shipping_data = array("label"=>"Доставка", "price"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "quantity"=>"1.00",	"amount"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), 
-			"vat"=>($this->delivery_taxtype == "null") ? null : $this->delivery_taxtype, 'method'=> (int)$this->kassa_method, 'object'=>4, "ean"=>null);
-			foreach ($items as $item) {
-				if ($this->kassa_enabled == 'yes') {
-				    $product = $order->get_product_from_item($item);
-				    $items_array[] = array("label"=>$item['name'], "price"=>number_format((float)$product->get_price(), 2, '.', ''), "quantity"=>number_format((float)$item['quantity'], 2, '.', ''), 
-				    "amount"=>number_format((float)$item['total']+abs((float)$item['total_tax']), 2, '.', ''), "vat"=>($this->kassa_taxtype == "null") ? null : $this->kassa_taxtype, 
-				    'method'=> (int)$this->kassa_method, 'object'=> (int)$this->kassa_object,
-				    "ean"=>($this->kassa_skubarcode == 'yes') ? ((strlen($product->get_sku()) < 1) ? null : $product->get_sku()) : null);
-				}
-				$title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
-			}
-			if ($this->kassa_enabled == 'yes' && $order->get_total_shipping() > 0) $items_array[] = $shipping_data;
-			$kassa_array = array("cloudPayments"=>(array("customerReceipt"=>array("Items"=>$items_array, "taxationSystem"=>$this->kassa_taxsystem, 'calculationPlace'=>'www.'.$_SERVER['SERVER_NAME'], 
-			"email"=>$order->billing_email, "phone"=>$order->billing_phone))));
-			$title = implode(', ', $title);
-      
-            $widget_f='charge';
-            if ($this->enabledDMS!='no')
-            {
-                $widget_f='auth';
+    		$order = new WC_Order( $order_id );
+    
+            if ($_POST['cp_card'] == 'widget'){
+            
+                return array(
+                    'result'   => 'success',
+                    'redirect' => home_url('/wp-content/plugins/cloudpayments-gateway-for-woocommerce/cloudpayments_widget.php?
+                    order_id='.$order_id.'&return_ok='.$this->get_return_url($order))
+                );
             }
-			?>
-			<script>
-				var widget = new cp.CloudPayments({language: '<?=$this->language?>'});
-		    	widget.<?=$widget_f?>({
-		            publicId: '<?=$this->public_id?>',
-		            description: 'Оплата заказа <?=$order_id?>',
-		            amount: <?=$order->get_total()?>,
-		            currency: '<?=$this->currency?>',
-		            skin: '<?=$this->skin?>',
-		            invoiceId: <?=$order_id?>,
-		            accountId: '<?=$order->billing_email?>',
-		            data: 
-		                <?php echo (($this->kassa_enabled == 'yes') ? json_encode($kassa_array) : "{}") ?>
-		            },
-			        function (options) { 
-						window.location.replace('<?=$this->get_return_url($order)?>');
-			        },
-			        function (reason, options) {
-						window.location.replace('<?=$order->get_cancel_order_url()?>');
-		        	}
-		        );
-			</script>
+            else {
+	    		$title = array();
+	    		$items_array = array();
+	    		$items = $order->get_items();
+	    		$shipping_data = array("label"=>"Доставка", "price"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), "quantity"=>"1.00",	"amount"=>number_format((float)$order->get_total_shipping()+abs((float)$order->get_shipping_tax()), 2, '.', ''), 
+	    		"vat"=>($this->delivery_taxtype == "null") ? null : $this->delivery_taxtype, 'method'=> (int)$this->kassa_method, 'object'=>4, "ean"=>null);
+	    		foreach ($items as $item) {
+	    			if ($this->kassa_enabled == 'yes') {
+	    			    $product = $order->get_product_from_item($item);
+	    			    $items_array[] = array("label"=>$item['name'], "price"=>number_format((float)$product->get_price(), 2, '.', ''), "quantity"=>number_format((float)$item['quantity'], 2, '.', ''), 
+	    			    "amount"=>number_format((float)$item['total']+abs((float)$item['total_tax']), 2, '.', ''), "vat"=>($this->kassa_taxtype == "null") ? null : $this->kassa_taxtype, 
+	    			    'method'=> (int)$this->kassa_method, 'object'=> (int)$this->kassa_object,
+	    			    "ean"=>($this->kassa_skubarcode == 'yes') ? ((strlen($product->get_sku()) < 1) ? null : $product->get_sku()) : null);
+	    			}
+	    			$title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
+	    		}
+	    		if ($this->kassa_enabled == 'yes' && $order->get_total_shipping() > 0) $items_array[] = $shipping_data;
+	    		$kassa_array = array("cloudPayments"=>(array("customerReceipt"=>array("Items"=>$items_array, "taxationSystem"=>$this->kassa_taxsystem, 'calculationPlace'=>'www.'.$_SERVER['SERVER_NAME'], 
+	    		"email"=>$order->billing_email, "phone"=>$order->billing_phone))));
+	    		$title = implode(', ', $title);
+      
+                $widget_f='charge';
+                if ($this->enabledDMS!='no') {
+                
+                    $widget_f='auth';
+                }
+ 
+                $accesskey = $this->public_id;
+                $access_psw = $this->api_pass;
+              
+                $token = WC_Payment_Tokens::get( (int)$_POST['cp_card'] );
+                
+				$request = array(
+                    'Token'                => $token->get_token(),
+                    'Amount'               => $order->get_total(),
+                    'Currency'             => $this->currency,
+                    'InvoiceId'            => $order_id,
+                    'AccountId'            => $token->get_user_id(),
+                    'Email'                => $order->billing_email,
+                    'Description'          => 'Оплата заказа № '.$order_id,
+                    'IpAddress'            => $_SERVER['REMOTE_ADDR'],
+                    'JsonData'             => $kassa_array
+                );
+            
+                //отправляем запрос        
+				$auth = base64_encode($accesskey. ":" . $access_psw); 
+				$response = wp_remote_post( 'https://api.cloudpayments.ru/payments/tokens/'.$widget_f, 
+					array(
+						'timeout'     => 30,
+						'redirection' => 5,
+						'httpversion' => '1.0',
+						'blocking'    => true,
+						'headers'     => array('Authorization' => 'Basic '.$auth, 'Content-Type' => 'application/json'),
+						'body'        => json_encode($request, JSON_UNESCAPED_UNICODE)
+					) 		
+				);
 
-			<?php
-		}
+                if ($response['body']['Success'] == true){
+            
+                    return array(
+                        'result' => 'success',
+                        'redirect' => $this->get_return_url( $order )
+                    );
+                }
+                else if ($response['body']['Message'] != null) {
+                
+                    wc_add_notice( __('Payment error:', 'woothemes') . $response['body']['Message'], 'error' );
+                    return;
+                }
+                else if ($response['body']['Model']['CardHolderMessage'] != null){
+                    
+                    wc_add_notice( __('Payment error:', 'woothemes') . $response['body']['Model']['CardHolderMessage'], 'error' );
+                    return;
+                }
+            }
+        }
+		
+		public function payment_fields() {
+            //echo $_SERVER['DOCUMENT_ROOT'];
+            ?>
+            <div style="border: 2px solid black; padding: 5px; background-color: white;">
+                Выберите карту для оплаты или оплатите новой
+		<br>
+            <?
+            $tokens = WC_Payment_Tokens::get_customer_tokens( get_current_user_id(), 'cpgwwc' );
+            $i =1;
+            if ($tokens) {
+                $checked_paymentForm = '';
+                $style_paymentForm='display: none;';
+                foreach ($tokens as $token) {
+                    if ($i == 1) {
+			    		$checked='checked';
+			    	}
+			    	else $checked = null;
+                    echo '<label>';
+                    echo '<input type="radio" name="cp_card" id="cp_card'.$i.'" value="'.$token->get_id().'" onclick="cpCard()" '.$checked.'>';
+                    echo $token->get_card_type();
+                    echo ' ************';
+                    echo $token->get_last4();
+                    echo '</label>';
+                    echo '<br>';
+			    	$i = $i +1;
+                }
+            }
+            else {
+                $checked_paymentForm = 'checked';
+                $style_paymentForm = '';
+            }
+        ?>
+            <label>
+                <input type="radio" name="cp_card" id="cp_card_checkout" value="widget" onclick="cpCardCheckout()" <?echo $checked_paymentForm; ?>>
+                Оплатить новой картой
+            </label>
+            <div id="paymentForm" style="<?echo $style_paymentForm; ?>">
+                <input type="hidden" name="CardCryptogramPacket" id="CardCryptogramPacket">
+                <input type="hidden" name="user" id="user" value="<?= get_current_user_id(); ?>">
+            </div>
+            </div>
+            <?php
+        }
+		
       	public function cpgwwc_processRequest($action,$request)
       	{
               $this->cpgwwc_addError("processRequest - action");
@@ -586,8 +739,31 @@ function cpgwwc_CloudPayments()
                   self::cpgwwc_OrderSetStatus($order,$this->status_pay);
                   $this->cpgwwc_addError('PAY_COMPLETE');
             endif;
-           $this->cpgwwc_addError('----------data============');
-           $this->cpgwwc_addError(print_r($data,true));
+			$this->cpgwwc_addError('----------data============');
+			$this->cpgwwc_addError(print_r($data,true));
+		   
+			$tokens = WC_Payment_Tokens::get_customer_tokens( $request['AccountId'], 'cpgwwc' );
+            $result = 'yes';
+            foreach ($tokens as $token) {
+                if ($request['Token'] == $token->get_token()) {
+                    $result = 'no';
+                    break;
+                }
+            }
+			
+			if ($result =='yes') {
+                $token = new WC_Payment_Token_CC();
+                $token->set_token( $request['Token'] );
+                $token->set_gateway_id( 'cpgwwc' );
+                $token->set_card_type( $request['CardType'] );
+                $token->set_last4( $request['CardLastFour'] );
+                $token->set_expiry_month( substr($request['CardExpDate'], 0, 2) );
+                $token->set_expiry_year( '20'.substr($request['CardExpDate'], -2) );
+                $token->set_user_id( $order->get_user_id() );
+                $token->set_default( 'true' );
+                $token->save(); 
+            }
+		   
             WC()->cart->empty_cart();
             echo json_encode($data);
         }
@@ -746,56 +922,15 @@ function cpgwwc_CloudPayments()
         {
         	global $woocommerce;			
         	$order = new WC_Order($request['InvoiceId']);
-          return $order;
+			return $order;
         }        
         
 		// Callback
         public function cpgwwc_handle_callback() 
         {
-          $this->cpgwwc_addError('handle_callback');
-          self::cpgwwc_processRequest($_GET['action'],$_POST);    
-          exit;
-          
-        	$headers = cpgwwc_detallheaders();
-        	if ((!isset($headers['Content-HMAC'])) and (!isset($headers['Content-Hmac'])))
-          {
-        		wp_mail(get_option('admin_email'), 'не установлены заголовки', print_r($headers,1));
-        		exit;
-        	}
-        	$message = file_get_contents('php://input');
-          $posted = wp_unslash( $_POST );
-    			$s = hash_hmac('sha256', $message, $this->api_pass, true);
-    			$hmac = base64_encode($s);
-    			if (!array_key_exists('Content-HMAC',$headers) && !array_key_exists('Content-Hmac',$headers) || (array_key_exists('Content-HMAC',$headers) && $headers['Content-HMAC'] != $hmac) || (array_key_exists('Content-Hmac',$headers) && $headers['Content-Hmac'] != $hmac))
-          {
-    			 wp_mail(get_option('admin_email'), 'подпись платежа cloudpayments некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     HMAC: '. $hmac);
-           exit("hmac error");
-			    }
-        	global $woocommerce;			
-        	$order = new WC_Order( $posted['InvoiceId'] );
-        	if ($posted['Amount'] != $order->get_total())
-          {
-        		wp_mail(get_option('admin_email'), 'сумма заказа некорректна', print_r($headers,1). '     payment: '. print_r($posted,1). '     order: '. print_r($order,1));
-        		exit("sum error");
-        	}
-          update_post_meta($posted['InvoiceId'], 'cpgwwc_CloudPayments', json_encode($posted, JSON_UNESCAPED_UNICODE));
-          if ($posted['Status'] == 'Completed') 
-          {
-         
-            if ($TYPE==2): 
-            else:
-              $order->payment_complete();
-              $order->add_order_note(__('Заказ успешно оплачен', 'woocommerce'));      
-              WC()->cart->empty_cart();
-            endif; 
-          } 
-          else
-          {
-            $order->update_status('on-hold', __('Заказ ожидает оплаты', 'woocommerce'));
-            $order->add_order_note(__('Заказ ожидает оплаты', 'woocommerce'));
-            WC()->cart->empty_cart();
-          }
-          exit;
+			$this->cpgwwc_addError('handle_callback');
+			self::cpgwwc_processRequest($_GET['action'],$_POST);    
+			exit;
         }
         
         public function cpgwwc_update_order_status($order_id,$old_status,$new_status) //OK
