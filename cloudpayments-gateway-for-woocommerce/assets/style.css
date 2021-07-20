@@ -1,0 +1,16 @@
+.cloud-payments {
+    padding: 0 10px;
+}
+
+.cloud-payments label{
+    display: block;
+    margin-bottom: 5px;
+}
+
+.cloud-payments input{
+    margin-right: 4px;
+}
+
+.cloud-payments .hide-save_cart {
+    display: none;
+}
