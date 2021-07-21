@@ -65,6 +65,7 @@ class CloudPayments_Init
                 'widget_f'   => $widget_f,
                 'language'   => $options->language,
                 'return_url' => esc_url($_GET['return_ok']),
+                'cancel_return_url' => esc_url($_GET['return_ok']),
             );
         }
         
@@ -143,6 +144,7 @@ class CloudPayments_Init
             'widget_f'   => $widget_f,
             'language'   => $options->language,
             'return_url' => esc_url($_GET['return_ok']),
+            'cancel_return_url' => $order->get_cancel_order_url(),
         );
     }
     

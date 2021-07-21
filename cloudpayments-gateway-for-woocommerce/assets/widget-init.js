@@ -8,7 +8,7 @@ window.onload = function () {
                 window.location.replace(widget_data.return_url);
             },
             function (reason, options) {
-                window.location.replace(widget_data.return_url);
+                window.location.replace(widget_data.cancel_return_url);
             }
         );
     }
@@ -20,7 +20,7 @@ window.onload = function () {
                 window.location.replace(widget_data.return_url);
             },
             function (reason, options) {
-                window.location.replace(widget_data.return_url);
+                window.location.replace(widget_data.cancel_return_url);
             }
         );
     }

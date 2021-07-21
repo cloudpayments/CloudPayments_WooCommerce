@@ -98,7 +98,10 @@ http://domain.ru/wordpress/wc-api/wc_cloudkassir?action=receipt
 
 == Upgrade Notice ==  
 
-= 3.1 =
+= 3.0.2 =
+* Поправлен редирект при неуспещной оплате.
+
+= 3.0.1 =
 * Поправлен скрипт сохранения токена карты.
 
 = 3.0 =
@@ -113,7 +116,10 @@ http://domain.ru/wordpress/wc-api/wc_cloudkassir?action=receipt
 
 == Changelog ==
 
-= 3.1 =
+= 3.0.2 =
+* Минорное исправления
+
+= 3.0.1 =
 * Минорное исправления
 
 = 3.0 =
