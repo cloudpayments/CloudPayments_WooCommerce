@@ -35,7 +35,8 @@ class CloudPayments_Api
                 $this->processReceiptAction($request);
                 break;
             case 'cancel':
-            case 'void':
+				$this->processCancelAction($request);
+                break;
             case 'refund':
                 $this->processRefundAction($request);
                 break;
@@ -181,6 +182,16 @@ class CloudPayments_Api
     }
     
     private function processRefundAction($request)
+    {
+        $order = self::getOrder($request);
+        if ($order) {
+            $order->update_status($this->status_chancel);
+        }
+        $data['code'] = 0;
+        echo json_encode($data);
+    }
+	
+	private function processCancelAction($request)
     {
         $order = self::getOrder($request);
         if ($order) {

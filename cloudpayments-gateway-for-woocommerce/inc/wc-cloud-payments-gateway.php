@@ -77,7 +77,7 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         
         if ($_POST['cp_card'] == 'widget') {
             
-            $cp_save_card = $_POST['cp_save_card'] ? 1 : 0;
+            $cp_save_card = $_POST['cp_save_card'] ? 1 : 1; // 1 : 1 всегда сохранять токен
             
             return array(
                 'result'   => 'success',
@@ -680,10 +680,13 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
             if ($response['body']['Success'] == true) {
                 $order->payment_complete();
                 $order->add_order_note(sprintf('Payment approved (ID: %s)', $response['body']['TransactionId']));
-                
+
                 return;
-            }
-            
+            } else {
+				$pattern = '(ReasonCode: %d), %s ';
+				$order->add_order_note(wp_sprintf($pattern, $response['body']['Model']['ReasonCode'], $response['body']['Model']['Reason']));
+			}
+
             if ($response['body']['Message'] != null || $response['body']['Model']['CardHolderMessage'] != null) {
                 WC_Subscriptions_Manager::process_subscription_payment_failure_on_order($order->get_id());
                 $order->update_status('failed', sprintf(__('Error: %s', 'woocommerce'), $response['body']['Message']));
