@@ -79,10 +79,15 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
             
             $cp_save_card = $_POST['cp_save_card'] ? 1 : 0;
             
+            $query = array(
+                    'order_id' => $order_id,
+                    'return_ok' => $this->get_return_url($order),
+                    'cp_save_card' => $cp_save_card
+            );
+            
             return array(
                 'result'   => 'success',
-                'redirect' => home_url('/wc-api/cloud_payments_widget?order_id=') . $order_id . '&return_ok=' . $this->get_return_url($order)
-                              . '&cp_save_card=' . $cp_save_card
+                'redirect' => home_url('/wc-api/cloud_payments_widget?') . http_build_query($query)
             );
         }
         
