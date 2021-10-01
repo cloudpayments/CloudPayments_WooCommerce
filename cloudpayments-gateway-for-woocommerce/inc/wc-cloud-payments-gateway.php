@@ -166,8 +166,12 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway {
 			'Currency'    => $this->currency,
 			'InvoiceId'   => $order_id,
 			'AccountId'   => $token->get_user_id(),
-			'Description' => 'Оплата заказа № ' . $order_id,
 			'Email'       => $order->get_billing_email(),
+			'Description' => sprintf(
+				/* translators: %s order_id */
+				__( 'Payment for order No. %s', 'cloudpayments' ),
+				esc_attr( $order_id )
+			),
 			'IpAddress'   => $_SERVER['REMOTE_ADDR'],
 			'JsonData'    => $kassa_array,
 		);
@@ -700,7 +704,11 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway {
 				'InvoiceId'   => $order->get_id(),
 				'AccountId'   => $user_id,
 				'Email'       => $order->get_billing_email(),
-				'Description' => 'Оплата заказа № ' . $order_id,
+				'Description' => sprintf(
+					/* translators: %s order_id */
+					__( 'Payment for order No. %s', 'cloudpayments' ),
+					esc_attr( $order_id )
+				),
 				'IpAddress'   => $_SERVER['REMOTE_ADDR'],
 				'JsonData'    => $kassa_array,
 			);
@@ -725,17 +733,37 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway {
 
 			if ( true == $response['body']['Success'] ) {
 				$order->payment_complete();
-				$order->add_order_note( sprintf( 'Payment approved (ID: %s)', $response['body']['TransactionId'] ) );
+				$order->add_order_note(
+					sprintf(
+						/* translators: %s transaction id */
+						__( 'Payment approved (ID: %s)', 'cloudpayments' ),
+						esc_attr( $response['body']['TransactionId'] )
+					)
+				);
 
 				return;
 			} else {
-				$pattern = '(ReasonCode: %d), %s ';
-				$order->add_order_note( wp_sprintf( $pattern, $response['body']['Model']['ReasonCode'], $response['body']['Model']['Reason'] ) );
+				$order->add_order_note(
+					sprintf(
+						/* translators: %1$d reason code, %2$s reason message */
+						__( '(ReasonCode: %1$d), %2$s', 'woocommerce' ),
+						$response['body']['Model']['ReasonCode'],
+						$response['body']['Model']['Reason']
+					)
+				);
 			}
 
 			if ( null != $response['body']['Message'] || null != $response['body']['Model']['CardHolderMessage'] ) {
 				WC_Subscriptions_Manager::process_subscription_payment_failure_on_order( $order->get_id() );
-				$order->update_status( 'failed', sprintf( esc_html__( 'Error: %s', 'woocommerce' ), $response['body']['Message'] ) );
+
+				$order->update_status(
+					'failed',
+					sprintf(
+						/* translators: %s error message */
+						esc_html__( 'Error: %s', 'woocommerce' ),
+						$response['body']['Message']
+					)
+				);
 			}
 		}
 	}
