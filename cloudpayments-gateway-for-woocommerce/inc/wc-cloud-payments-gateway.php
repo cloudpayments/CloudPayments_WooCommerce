@@ -219,7 +219,7 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway {
 	public function admin_options() {
 		if ( ! $this->ssl_check() ) {
 			?>
-			<div class="inline error"><p><strong><?php echo esc_html_e( 'Warning', 'woocommerce' ); ?></strong>: <?php echo $this->msg; ?></p></div>
+			<div class="inline error"><p><strong><?php esc_html_e( 'Warning', 'woocommerce' ); ?></strong>: <?php echo $this->msg; ?></p></div>
 			<?php
 		}
 		?>
