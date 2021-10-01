@@ -594,18 +594,23 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway {
 			$data['amounts']['advancePayment'] = $total_amount;
 		}
 
-		$aData = array(
-			'Inn'             => $this->inn,
-			'InvoiceId'       => $order->get_id(), //номер заказа, необязательный
-			'AccountId'       => $order->get_user_id(),
-			'Type'            => $type,
-			'CustomerReceipt' => $data,
+		$receipt_data = apply_filters(
+			'cloudpayments_send_receipt_data',
+			array(
+				'Inn'             => $this->inn,
+				'InvoiceId'       => $order->get_id(), // номер заказа, необязательный.
+				'AccountId'       => $order->get_user_id(),
+				'Type'            => $type,
+				'CustomerReceipt' => $data,
+			),
+			$order,
+			$this
 		);
 
 		$API_URL  = 'https://api.cloudpayments.ru/kkt/receipt';
-		$request2 = wp_json_encode( $aData );
+		$request2 = wp_json_encode( $receipt_data );
 
-		$str   = date( "d-m-Y H:i:s" ) . $aData['Type'] . $aData['InvoiceId'] . $aData['AccountId'] . $aData['CustomerReceipt']['email'];
+		$str   = date( 'd-m-Y H:i:s' ) . $receipt_data['Type'] . $receipt_data['InvoiceId'] . $receipt_data['AccountId'] . $receipt_data['CustomerReceipt']['email'];
 		$reque = md5( $str );
 		$auth  = base64_encode( $this->public_id . ':' . $this->api_pass );
 
