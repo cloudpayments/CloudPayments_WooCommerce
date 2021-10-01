@@ -1,2 +1,3 @@
-
 *.stackdump
+*.pot~
+*.po~
