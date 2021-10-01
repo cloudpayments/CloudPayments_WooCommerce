@@ -30,17 +30,17 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         $this->description = 'CloudPayments';
         
         $this->enabled          = $this->get_option('enabled');
-        $this->enabledDMS       = $this->get_option('enabledDMS'); // переносим
+        $this->enabledDMS       = $this->get_option('enabledDMS');
         $this->DMS_AU_status    = $this->get_option('DMS_AU_status');
         $this->DMS_CF_status    = $this->get_option('DMS_CF_status');
         $this->skin             = $this->get_option('skin');
         $this->language         = $this->get_option('language');
-        $this->status_chancel   = $this->get_option('status_chancel'); // переносим
-        $this->status_pay       = $this->get_option('status_pay'); // переносим
+        $this->status_chancel   = $this->get_option('status_chancel');
+        $this->status_pay       = $this->get_option('status_pay');
         $this->title            = $this->get_option('title');
         $this->description      = $this->get_option('description');
         $this->public_id        = $this->get_option('public_id');
-        $this->api_pass         = $this->get_option('api_pass'); // переносим
+        $this->api_pass         = $this->get_option('api_pass');
         $this->currency         = $this->get_option('currency');
         $this->kassa_enabled    = $this->get_option('kassa_enabled');
         $this->kassa_taxtype    = $this->get_option('kassa_taxtype');
@@ -77,7 +77,7 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         
         if ($_POST['cp_card'] == 'widget') {
             
-            $cp_save_card = $_POST['cp_save_card'] ? 1 : 1; // 1 : 1 всегда сохранять токен
+            $cp_save_card = $_POST['cp_save_card'] ? 1 : 0; // 1 : 1 всегда сохранять токен
             
             $query = array(
                     'order_id' => $order_id,
