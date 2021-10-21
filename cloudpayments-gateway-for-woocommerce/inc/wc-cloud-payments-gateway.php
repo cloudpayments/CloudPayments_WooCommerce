@@ -568,15 +568,20 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         }
         
         if ($order->get_total_shipping()) {
-            $items[] = array(
-                'label'    => "Доставка",
-                'price'    => $order->get_total_shipping(),
-                'quantity' => 1,
-                'amount'   => $order->get_total_shipping(),
-                'vat'      => $this->delivery_taxtype,
-                'method'   => $method,
-                'object'   => 4,
-            );
+			$items[] = apply_filters(
+				'cloudpayments_send_receipt_shipping_data',
+				array(
+					'label'    => 'Доставка',
+					'price'    => $order->get_total_shipping(),
+					'quantity' => 1,
+					'amount'   => $order->get_total_shipping(),
+					'vat'      => $this->delivery_taxtype,
+					'method'   => $method,
+					'object'   => 4,
+				),
+				$order,
+				$this
+			);
             
             $total_amount = $total_amount + number_format(floatval($order->get_total_shipping()), 2, ".", '');
         }
