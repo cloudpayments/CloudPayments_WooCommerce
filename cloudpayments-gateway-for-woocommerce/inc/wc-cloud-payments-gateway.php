@@ -636,16 +636,22 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         $title         = array();
         $items_array   = array();
         $items         = $order->get_items();
-        $shipping_data = array(
-            "label"    => "Доставка",
-            "price"    => number_format((float)$order->get_total_shipping() + abs((float)$order->get_shipping_tax()), 2, '.', ''),
-            "quantity" => "1.00",
-            "amount"   => number_format((float)$order->get_total_shipping() + abs((float)$order->get_shipping_tax()), 2, '.', ''),
-            "vat"      => ($this->delivery_taxtype == "null") ? null : $this->delivery_taxtype,
-            'method'   => (int)$this->kassa_method,
-            'object'   => 4,
-            "ean"      => null
-        );
+		$shipping_data = apply_filters(
+			'cloudpayments_scheduled_subscription_payment_shipping_data',
+			array(
+				'label'    => __( 'Shipping', 'woocommerce' ),
+				'price'    => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+				'quantity' => '1.00',
+				'amount'   => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+				'vat'      => ( 'null' == $this->delivery_taxtype) ? null : $this->delivery_taxtype,
+				'method'   => (int) $this->kassa_method,
+				'object'   => 4,
+				'ean'      => null,
+			),
+			$order,
+			$this
+		);
+
         foreach ($items as $item) {
             if ($this->kassa_enabled == 'yes') {
                 $product       = $order->get_product_from_item($item);
