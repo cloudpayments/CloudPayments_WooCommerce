@@ -546,15 +546,23 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
             } else {
                 $method = (int)$this->kassa_method;
             }
-            $items[] = array(
-                'label'    => $product->get_name(),
-                'price'    => number_format($product->get_price(), 2, ".", ''),
-                'quantity' => $item_data->get_quantity(),
-                'amount'   => number_format(floatval($item_data->get_total()), 2, ".", ''),
-                'vat'      => $this->kassa_taxtype,
-                'method'   => $method,
-                'object'   => (int)$this->kassa_object,
-            );
+			$items[] = apply_filters(
+				'cloudpayments_send_receipt_item',
+				array(
+					'label'    => $product->get_name(),
+					'price'    => number_format( $product->get_price(), 2, '.', '' ),
+					'quantity' => $item_data->get_quantity(),
+					'amount'   => number_format( floatval( $item_data->get_total() ), 2, '.', '' ),
+					'vat'      => $this->kassa_taxtype,
+					'method'   => $method,
+					'object'   => (int) $this->kassa_object,
+				),
+				$product,
+				$item_id,
+				$item_data,
+				$method,
+				$this
+			);
             
             $total_amount = $total_amount + number_format(floatval($item_data->get_total()), 2, ".", '');
         }
