@@ -655,16 +655,23 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         foreach ($items as $item) {
             if ($this->kassa_enabled == 'yes') {
                 $product       = $order->get_product_from_item($item);
-                $items_array[] = array(
-                    "label"    => $item['name'],
-                    "price"    => number_format((float)$product->get_price(), 2, '.', ''),
-                    "quantity" => number_format((float)$item['quantity'], 2, '.', ''),
-                    "amount"   => number_format((float)$item['total'] + abs((float)$item['total_tax']), 2, '.', ''),
-                    "vat"      => ($this->kassa_taxtype == "null") ? null : $this->kassa_taxtype,
-                    'method'   => (int)$this->kassa_method,
-                    'object'   => (int)$this->kassa_object,
-                    "ean"      => ($this->kassa_skubarcode == 'yes') ? ((strlen($product->get_sku()) < 1) ? null : $product->get_sku()) : null
-                );
+				$items_array[] = apply_filters(
+					'cloudpayments_scheduled_subscription_payment_order_item',
+					array(
+						'label'    => $item['name'],
+						'price'    => number_format( (float) $product->get_price(), 2, '.', '' ),
+						'quantity' => number_format( (float) $item['quantity'], 2, '.', '' ),
+						'amount'   => number_format( (float) $item['total'] + abs( (float) $item['total_tax'] ), 2, '.', '' ),
+						'vat'      => ( 'null' == $this->kassa_taxtype ) ? null : $this->kassa_taxtype,
+						'method'   => (int) $this->kassa_method,
+						'object'   => (int) $this->kassa_object,
+						'ean'      => ( 'yes' == $this->kassa_skubarcode ) ? ( ( strlen( $product->get_sku() ) < 1 ) ? null : $product->get_sku() ) : null,
+					),
+					$product,
+					$item_id,
+					$item,
+					$this
+				);
             }
             $title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
         }
