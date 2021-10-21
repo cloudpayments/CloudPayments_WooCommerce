@@ -598,13 +598,18 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
             $data['amounts']['advancePayment'] = $total_amount;
         }
         
-        $aData = array(
-            'Inn'             => $this->inn,
-            'InvoiceId'       => $order->get_id(), //номер заказа, необязательный
-            'AccountId'       => $order->get_user_id(),
-            'Type'            => $type,
-            'CustomerReceipt' => $data
-        );
+		$aData = apply_filters(
+			'cloudpayments_send_receipt_data',
+			array(
+				'Inn'             => $this->inn,
+				'InvoiceId'       => $order->get_id(), // номер заказа, необязательный.
+				'AccountId'       => $order->get_user_id(),
+				'Type'            => $type,
+				'CustomerReceipt' => $data,
+			),
+			$order,
+			$this
+		);
         
         $API_URL  = 'https://api.cloudpayments.ru/kkt/receipt';
         $request2 = json_encode($aData);
