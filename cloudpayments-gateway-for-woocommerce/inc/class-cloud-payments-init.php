@@ -7,6 +7,7 @@ class CloudPayments_Init
     {
         add_filter('init', [__CLASS__, 'register_post_statuses']);
         add_action('wp_enqueue_scripts', [__CLASS__, 'cloudPayments_scripts']);
+        add_action('admin_enqueue_scripts', [__CLASS__, 'cloudPayments_admin_scripts']);
         add_action('plugins_loaded', [__CLASS__, 'CloudPayments']);
         add_filter('wc_order_statuses', [__CLASS__, 'add_order_statuses']);
         add_action('woocommerce_api_cloud_payments_widget', [__CLASS__, 'api_remove_enqueues'], 1);
@@ -40,6 +41,12 @@ class CloudPayments_Init
             wp_enqueue_style('CloudPayments_style', plugins_url('/assets/style.css', CPGWWC_PLUGIN_FILENAME));
         }
         
+    }
+
+    public static function cloudPayments_admin_scripts()
+    {
+        wp_enqueue_script( 'CloudPayments_admin', plugins_url( '/assets/admin-scripts.js', CPGWWC_PLUGIN_FILENAME ), ['jquery', 'clipboard', 'wp-i18n'], time(), true);
+        wp_enqueue_style('CloudPayments_admin', plugins_url('/assets/admin-styles.css', CPGWWC_PLUGIN_FILENAME));
     }
     
     public static function widget_data()

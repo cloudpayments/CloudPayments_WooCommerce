@@ -1,0 +1,36 @@
+ .cloudpayments-attention {
+    border: 2px solid #6496dc;
+    border-radius: 6px;
+    background-color: #fff;
+    padding: 1em 1em 0 1em;
+    max-width: 800px;
+}
+
+.account-action {
+    margin: 0 0 1em 0;
+}
+.account-action__label {
+    display: block;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+}
+.account-action__input {
+    display: flex;
+}
+.account-action__input .cloudpayments_action_input {
+    flex: 1;
+    margin-right: 5px;
+}
+
+.account-action__input .button {
+    margin-bottom: 0;
+    font-size: 0;
+}
+.account-action__input .button .svg-icon {
+    display: inline-block;
+    vertical-align: top;
+    fill: currentColor;
+
+    width: 20px;
+    height: 20px;
+}

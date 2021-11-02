@@ -214,15 +214,55 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         ?>
         <h3>CloudPayments</h3>
         <p>CloudPayments – прямой и простой прием платежей с кредитных карт</p>
-        <p><strong>В личном кабинете включите Check-уведомление на адрес:</strong> <?php echo home_url('/wc-api/' . strtolower(get_class($this))) . "?action=check" ?></p>
-        <p><strong>В личном кабинете включите Pay-уведомление на адрес:</strong> <?php echo home_url('/wc-api/' . strtolower(get_class($this))) . "?action=pay" ?></p>
-        <p><strong>В личном кабинете включите Fail-уведомление на адрес:</strong> <?php echo home_url('/wc-api/' . strtolower(get_class($this))) . "?action=fail" ?></p>
-        <p><strong>В личном кабинете включите Confirm-уведомление на адрес:</strong> <?php echo home_url('/wc-api/' . strtolower(get_class($this))) . "?action=confirm" ?></p>
-        <p><strong>В личном кабинете включите Refund-уведомление на адрес:</strong> <?php echo home_url('/wc-api/' . strtolower(get_class($this))) . "?action=refund" ?></p>
-        <p><strong>В личном кабинете включите Cancel-уведомление на адрес:</strong> <?php echo home_url('/wc-api/' . strtolower(get_class($this))) . "?action=cancel" ?></p>
-        <p>Кодировка UTF-8, HTTP-метод POST, Формат запроса CloudPayments.</p>
+
         <?php
-        
+        $account_actions = array(
+            'check',
+            'pay',
+            'fail',
+            'confirm',
+            'refund',
+            'cancel',
+        );
+
+        $action_url_template = home_url( '/wc-api/' . strtolower( get_class( $this ) ) );
+        ?>
+        <div class="cloudpayments-attention">
+            <?php foreach ( $account_actions as $key => $action ) : ?>
+                <div class="account-action">
+                    <label class="account-action__label">
+                        <?php
+                        printf(
+                            esc_html__( 'В личном кабинете включите %s-уведомление на адрес', 'cloudpayments' ),
+                            esc_html( ucfirst( $action ) )
+                        );
+                        ?>
+                    </label>
+                    <div class="account-action__input copy-to-clipboard-container">
+                        <?php
+                        printf(
+                            '<input type="text" class="input-text cloudpayments_action_input" id="cloudpayments_account_action_%s_url" value="%s" readonly>',
+                            esc_attr( $action ),
+                            esc_attr( $action_url_template . '?action=' . $action )
+                        );
+                        ?>
+                        <?php
+                        printf(
+                            '<button type="button" class="button copy-cloudpayments-action-url" data-clipboard-target="#cloudpayments_account_action_%s_url" title="%s"><svg class="svg-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M14.016 12h5.484l-5.484-5.484v5.484zM15 5.016l6 6v9.984q0 0.797-0.609 1.406t-1.406 0.609h-11.016q-0.797 0-1.383-0.609t-0.586-1.406v-14.016q0-0.797 0.609-1.383t1.406-0.586h6.984zM15.984 0.984v2.016h-12v14.016h-1.969v-14.016q0-0.797 0.586-1.406t1.383-0.609h12z"></path></svg> <span class="screen-reader-text">%s</button>',
+                            esc_attr( $action ),
+                            esc_attr__( 'Copy URL to clipboard' ),
+                            esc_html__( 'Copy URL to clipboard' )
+                        );
+                        ?>
+                        <span class="success hidden" aria-hidden="true"><?php esc_html_e( 'Copied!' ); ?></span>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+
+            <p>Кодировка UTF-8, HTTP-метод POST, Формат запроса CloudPayments.</p>
+        </div>
+
+        <?php
         echo '<table class="form-table">';
         $this->generate_settings_html();
         echo '</table>';
