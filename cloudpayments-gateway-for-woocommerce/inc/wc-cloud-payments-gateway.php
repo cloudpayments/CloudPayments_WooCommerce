@@ -94,30 +94,43 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         $title         = array();
         $items_array   = array();
         $items         = $order->get_items();
-        $shipping_data = array(
-            "label"    => "Доставка",
-            "price"    => number_format((float)$order->get_total_shipping() + abs((float)$order->get_shipping_tax()), 2, '.', ''),
-            "quantity" => "1.00",
-            "amount"   => number_format((float)$order->get_total_shipping() + abs((float)$order->get_shipping_tax()), 2, '.', ''),
-            "vat"      => ($this->delivery_taxtype == "null") ? null : $this->delivery_taxtype,
-            'method'   => (int)$this->kassa_method,
-            'object'   => 4,
-            "ean"      => null
-        );
+		$shipping_data = apply_filters(
+			'cloudpayments_process_payment_shipping_data',
+			array(
+				'label'    => 'Доставка',
+				'price'    => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+				'quantity' => '1.00',
+				'amount'   => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+				'vat'      => ( 'null' == $this->delivery_taxtype ) ? null : $this->delivery_taxtype,
+				'method'   => (int) $this->kassa_method,
+				'object'   => 4,
+				'ean'      => null,
+			),
+			$order,
+			$this
+		);
         
         foreach ($items as $item) {
             if ($this->kassa_enabled == 'yes') {
                 $product       = $order->get_product_from_item($item);
-                $items_array[] = array(
-                    "label"    => $item['name'],
-                    "price"    => number_format((float)$product->get_price(), 2, '.', ''),
-                    "quantity" => number_format((float)$item['quantity'], 2, '.', ''),
-                    "amount"   => number_format((float)$item['total'] + abs((float)$item['total_tax']), 2, '.', ''),
-                    "vat"      => ($this->kassa_taxtype == "null") ? null : $this->kassa_taxtype,
-                    'method'   => (int)$this->kassa_method,
-                    'object'   => (int)$this->kassa_object,
-                    "ean"      => ($this->kassa_skubarcode == 'yes') ? ((strlen($product->get_sku()) < 1) ? null : $product->get_sku()) : null
-                );
+
+				$items_array[] = apply_filters(
+					'cloudpayments_process_payment_order_item',
+					array(
+						'label'    => $item['name'],
+						'price'    => number_format( (float) $product->get_price(), 2, '.', '' ),
+						'quantity' => number_format( (float) $item['quantity'], 2, '.', '' ),
+						'amount'   => number_format( (float) $item['total'] + abs( (float) $item['total_tax'] ), 2, '.', '' ),
+						'vat'      => ( 'null' == $this->kassa_taxtype ) ? null : $this->kassa_taxtype,
+						'method'   => (int) $this->kassa_method,
+						'object'   => (int) $this->kassa_object,
+						'ean'      => ( 'yes' == $this->kassa_skubarcode ) ? ( ( strlen( $product->get_sku() ) < 1 ) ? null : $product->get_sku() ) : null,
+					),
+					$product,
+					$item_id,
+					$item,
+					$this
+				);
             }
             $title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
         }
@@ -533,29 +546,42 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
             } else {
                 $method = (int)$this->kassa_method;
             }
-            $items[] = array(
-                'label'    => $product->get_name(),
-                'price'    => number_format($product->get_price(), 2, ".", ''),
-                'quantity' => $item_data->get_quantity(),
-                'amount'   => number_format(floatval($item_data->get_total()), 2, ".", ''),
-                'vat'      => $this->kassa_taxtype,
-                'method'   => $method,
-                'object'   => (int)$this->kassa_object,
-            );
+			$items[] = apply_filters(
+				'cloudpayments_send_receipt_item',
+				array(
+					'label'    => $product->get_name(),
+					'price'    => number_format( $product->get_price(), 2, '.', '' ),
+					'quantity' => $item_data->get_quantity(),
+					'amount'   => number_format( floatval( $item_data->get_total() ), 2, '.', '' ),
+					'vat'      => $this->kassa_taxtype,
+					'method'   => $method,
+					'object'   => (int) $this->kassa_object,
+				),
+				$product,
+				$item_id,
+				$item_data,
+				$method,
+				$this
+			);
             
             $total_amount = $total_amount + number_format(floatval($item_data->get_total()), 2, ".", '');
         }
         
         if ($order->get_total_shipping()) {
-            $items[] = array(
-                'label'    => "Доставка",
-                'price'    => $order->get_total_shipping(),
-                'quantity' => 1,
-                'amount'   => $order->get_total_shipping(),
-                'vat'      => $this->delivery_taxtype,
-                'method'   => $method,
-                'object'   => 4,
-            );
+			$items[] = apply_filters(
+				'cloudpayments_send_receipt_shipping_data',
+				array(
+					'label'    => 'Доставка',
+					'price'    => $order->get_total_shipping(),
+					'quantity' => 1,
+					'amount'   => $order->get_total_shipping(),
+					'vat'      => $this->delivery_taxtype,
+					'method'   => $method,
+					'object'   => 4,
+				),
+				$order,
+				$this
+			);
             
             $total_amount = $total_amount + number_format(floatval($order->get_total_shipping()), 2, ".", '');
         }
@@ -572,13 +598,18 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
             $data['amounts']['advancePayment'] = $total_amount;
         }
         
-        $aData = array(
-            'Inn'             => $this->inn,
-            'InvoiceId'       => $order->get_id(), //номер заказа, необязательный
-            'AccountId'       => $order->get_user_id(),
-            'Type'            => $type,
-            'CustomerReceipt' => $data
-        );
+		$aData = apply_filters(
+			'cloudpayments_send_receipt_data',
+			array(
+				'Inn'             => $this->inn,
+				'InvoiceId'       => $order->get_id(), // номер заказа, необязательный.
+				'AccountId'       => $order->get_user_id(),
+				'Type'            => $type,
+				'CustomerReceipt' => $data,
+			),
+			$order,
+			$this
+		);
         
         $API_URL  = 'https://api.cloudpayments.ru/kkt/receipt';
         $request2 = json_encode($aData);
@@ -605,29 +636,42 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         $title         = array();
         $items_array   = array();
         $items         = $order->get_items();
-        $shipping_data = array(
-            "label"    => "Доставка",
-            "price"    => number_format((float)$order->get_total_shipping() + abs((float)$order->get_shipping_tax()), 2, '.', ''),
-            "quantity" => "1.00",
-            "amount"   => number_format((float)$order->get_total_shipping() + abs((float)$order->get_shipping_tax()), 2, '.', ''),
-            "vat"      => ($this->delivery_taxtype == "null") ? null : $this->delivery_taxtype,
-            'method'   => (int)$this->kassa_method,
-            'object'   => 4,
-            "ean"      => null
-        );
+		$shipping_data = apply_filters(
+			'cloudpayments_scheduled_subscription_payment_shipping_data',
+			array(
+				'label'    => __( 'Shipping', 'woocommerce' ),
+				'price'    => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+				'quantity' => '1.00',
+				'amount'   => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+				'vat'      => ( 'null' == $this->delivery_taxtype) ? null : $this->delivery_taxtype,
+				'method'   => (int) $this->kassa_method,
+				'object'   => 4,
+				'ean'      => null,
+			),
+			$order,
+			$this
+		);
+
         foreach ($items as $item) {
             if ($this->kassa_enabled == 'yes') {
                 $product       = $order->get_product_from_item($item);
-                $items_array[] = array(
-                    "label"    => $item['name'],
-                    "price"    => number_format((float)$product->get_price(), 2, '.', ''),
-                    "quantity" => number_format((float)$item['quantity'], 2, '.', ''),
-                    "amount"   => number_format((float)$item['total'] + abs((float)$item['total_tax']), 2, '.', ''),
-                    "vat"      => ($this->kassa_taxtype == "null") ? null : $this->kassa_taxtype,
-                    'method'   => (int)$this->kassa_method,
-                    'object'   => (int)$this->kassa_object,
-                    "ean"      => ($this->kassa_skubarcode == 'yes') ? ((strlen($product->get_sku()) < 1) ? null : $product->get_sku()) : null
-                );
+				$items_array[] = apply_filters(
+					'cloudpayments_scheduled_subscription_payment_order_item',
+					array(
+						'label'    => $item['name'],
+						'price'    => number_format( (float) $product->get_price(), 2, '.', '' ),
+						'quantity' => number_format( (float) $item['quantity'], 2, '.', '' ),
+						'amount'   => number_format( (float) $item['total'] + abs( (float) $item['total_tax'] ), 2, '.', '' ),
+						'vat'      => ( 'null' == $this->kassa_taxtype ) ? null : $this->kassa_taxtype,
+						'method'   => (int) $this->kassa_method,
+						'object'   => (int) $this->kassa_object,
+						'ean'      => ( 'yes' == $this->kassa_skubarcode ) ? ( ( strlen( $product->get_sku() ) < 1 ) ? null : $product->get_sku() ) : null,
+					),
+					$product,
+					$item_id,
+					$item,
+					$this
+				);
             }
             $title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
         }

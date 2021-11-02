@@ -3,7 +3,7 @@
  * Plugin Name: CloudPayments Gateway for WooCommerce
  * Plugin URI: https://github.com/cloudpayments/CloudPayments_WooCommerce
  * Description: Extends WooCommerce with CloudPayments Gateway.
- * Version: 3.0.3 beta
+ * Version: 3.0.4 beta+filters
  */
 if ( ! defined('ABSPATH')) {
     exit;
