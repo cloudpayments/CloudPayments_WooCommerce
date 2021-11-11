@@ -138,7 +138,7 @@ class CloudPayments_Init
         
         $data['publicId']    = $options->public_id;
         $data['description'] = $options->order_text . ' ' . $order_id;
-        $data['amount']      = (int)$order->get_total();
+        $data['amount']      = (float)$order->get_total();
         $data['currency']    = $options->currency;
         $data['skin']        = $options->skin;
         $data['invoiceId']   = $order_id;
