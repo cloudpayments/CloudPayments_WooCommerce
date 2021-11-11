@@ -1,8 +1,9 @@
 <?php
-$current_user_id = get_current_user_id();
-$tokens          = WC_Payment_Tokens::get_customer_tokens( $current_user_id, 'wc_cloudpayments_gateway' );
-$wrapper_class   = $tokens ? ' cloud-payments--has-tokens' : ' cloud-payments--no-tokens';
-$hide_save_cart  = $tokens ? ' hide-save_cart' : '';
+$current_user_id     = get_current_user_id();
+$tokens              = WC_Payment_Tokens::get_customer_tokens( $current_user_id, 'wc_cloudpayments_gateway' );
+$wrapper_class       = $tokens ? ' cloud-payments--has-tokens' : ' cloud-payments--no-tokens';
+$hide_save_cart      = $tokens ? ' hide-save_cart' : '';
+$hide_widget_control = ! $tokens ? ' hide-widget_control' : '';
 ?>
 <div class="cloud-payments<?php echo esc_attr( $wrapper_class ); ?>">
 
@@ -32,10 +33,16 @@ $hide_save_cart  = $tokens ? ' hide-save_cart' : '';
 				$tokens
 			);
 		}
+	} else {
+		echo apply_filters( // phpcs:ignore
+			'cloudpayments_checkout_no_tokens_text',
+			'<p>' . esc_html__( 'Для оплаты заказа вы будете перенаправлены на страницу сервиса Cloud Payments.', 'cloudpayments' ) . '</p>',
+			$tokens
+		);
 	}
 	?>
 
-	<label class="cloud-payments-pay-other-card">
+	<label class="cloud-payments-pay-other-card<?php echo esc_attr( $hide_widget_control ); ?>">
 		<input
 			type="radio"
 			name="cp_card"
