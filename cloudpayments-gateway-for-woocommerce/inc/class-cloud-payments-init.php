@@ -61,7 +61,7 @@ class CloudPayments_Init
             
             $data['publicId']    = $options->public_id;
             $data['description'] = 'Добавление карты';
-            $data['amount']      = 10;
+            $data['amount']      = 11;
             $data['currency']    = $options->currency;
             $data['skin']        = $options->skin;
             $data['accountId']   = get_current_user_id();
