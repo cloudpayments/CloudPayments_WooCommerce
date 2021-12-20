@@ -11,6 +11,7 @@
     margin-right: 4px;
 }
 
-.cloud-payments .hide-save_cart {
+.cloud-payments .hide-save_cart,
+.cloud-payments .hide-widget_control {
     display: none;
 }
