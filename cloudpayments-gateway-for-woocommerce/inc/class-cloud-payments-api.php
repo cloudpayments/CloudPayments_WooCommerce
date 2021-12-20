@@ -15,8 +15,8 @@ class CloudPayments_Api
     
     public function processRequest()
     {
-        $action  = sanitize_mime_type($_GET['action']);
-        $request = sanitize_mime_type($_POST);
+        $action  = $_GET['action'];
+        $request = $_POST;
         
         switch ($action) {
             case 'check':
