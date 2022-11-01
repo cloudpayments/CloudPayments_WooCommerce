@@ -15,8 +15,8 @@ class CloudPayments_Api
     
     public function processRequest()
     {
-        $action  = sanitize_mime_type($_GET['action']);
-        $request = sanitize_mime_type($_POST);
+        $action  = $_GET['action'];
+        $request = $_POST;
         
         switch ($action) {
             case 'check':
@@ -35,8 +35,7 @@ class CloudPayments_Api
                 $this->processReceiptAction($request);
                 break;
             case 'cancel':
-				$this->processCancelAction($request);
-                break;
+            case 'void':
             case 'refund':
                 $this->processRefundAction($request);
                 break;
@@ -98,7 +97,7 @@ class CloudPayments_Api
         
         echo json_encode($data);
     }
-    
+
     private function processSuccessAction($request)
     {
         
@@ -112,6 +111,7 @@ class CloudPayments_Api
         } else {
             $order->update_status($this->status_pay);
             $order->payment_complete();
+            $order->add_order_note(sprintf('Payment approved (TransactionID: %s)', json_encode($request['TransactionId'])));
         }
         
         /** СОЗДАНИЕ ТОКЕНА */
@@ -190,16 +190,6 @@ class CloudPayments_Api
         $data['code'] = 0;
         echo json_encode($data);
     }
-	
-	private function processCancelAction($request)
-    {
-        $order = self::getOrder($request);
-        if ($order) {
-            $order->update_status($this->status_chancel);
-        }
-        $data['code'] = 0;
-        echo json_encode($data);
-    }
     
     private function processConfirmAction($request)
     {
@@ -250,7 +240,7 @@ class CloudPayments_Api
         $oid       = $request['InvoiceId'];
         $paymentid = $order->get_id();
         
-        return round($paymentid, 2) == round($oid, 2); //верно?
+        return round($paymentid, 2) == round($oid, 2);
     }
     
 }

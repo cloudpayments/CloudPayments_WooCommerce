@@ -7,7 +7,7 @@ class CloudPayments_Init
     {
         add_filter('init', [__CLASS__, 'register_post_statuses']);
         add_action('wp_enqueue_scripts', [__CLASS__, 'cloudPayments_scripts']);
-        add_action('admin_enqueue_scripts', [__CLASS__, 'cloudPayments_admin_scripts']);
+		add_action('admin_enqueue_scripts', [__CLASS__, 'cloudPayments_admin_scripts']);
         add_action('plugins_loaded', [__CLASS__, 'CloudPayments']);
         add_filter('wc_order_statuses', [__CLASS__, 'add_order_statuses']);
         add_action('woocommerce_api_cloud_payments_widget', [__CLASS__, 'api_remove_enqueues'], 1);
@@ -20,7 +20,7 @@ class CloudPayments_Init
                 global $wp_scripts;
                 $wp_scripts->queue = array();
                 
-                wp_enqueue_script('CloudPayments_Widget', 'https://widget.cloudpayments.ru/bundles/cloudpayments?cms=WordPress', array(), time(), false);
+                wp_enqueue_script('CloudPayments_Widget', 'https://widget.cloudpayments.ru/bundles/cloudpayments.js', array(), time(), false);
                 wp_enqueue_script('CloudPayments_Widget_Init', plugins_url('/assets/widget-init.js', CPGWWC_PLUGIN_FILENAME), array(), time(), false);
                 
                 wp_localize_script('CloudPayments_Widget_Init', 'widget_data', CloudPayments_Init::widget_data());
@@ -43,7 +43,7 @@ class CloudPayments_Init
         
     }
 
-    public static function cloudPayments_admin_scripts()
+	public static function cloudPayments_admin_scripts()
     {
         wp_enqueue_script( 'CloudPayments_admin', plugins_url( '/assets/admin-scripts.js', CPGWWC_PLUGIN_FILENAME ), ['jquery', 'clipboard', 'wp-i18n'], time(), true);
         wp_enqueue_style('CloudPayments_admin', plugins_url('/assets/admin-styles.css', CPGWWC_PLUGIN_FILENAME));
@@ -54,29 +54,29 @@ class CloudPayments_Init
         global $woocommerce;
         
         $options = (object)get_option('woocommerce_wc_cloudpayments_gateway_settings');
-        
+		$current_user = wp_get_current_user();
         if (isset($_GET['action']) && $_GET['action'] == 'add_payment_method') {
-            
             $widget_f = 'auth';
-            
+
             $data['publicId']    = $options->public_id;
             $data['description'] = 'Добавление карты';
-            $data['amount']      = 11;
-            $data['currency']    = $options->currency;
+            $data['amount']      = ($options->currency !== 'siteCurrency') ? 11 : 1;
+            $data['currency']    = ($options->currency !== 'siteCurrency') ? $options->currency : get_woocommerce_currency();
             $data['skin']        = $options->skin;
-            $data['accountId']   = get_current_user_id();
+            $data['accountId']   = $current_user->ID;
+            $data['email']       = $current_user->user_email;
             $data['data']        = array('add_payment_method' => 1);
-            
+
             return array(
                 'data'       => $data,
                 'widget_f'   => $widget_f,
                 'language'   => $options->language,
                 'return_url' => esc_url($_GET['return_ok']),
-                'cancel_return_url' => esc_url($_GET['return_ok']),
+				'cancel_return_url' => esc_url($_GET['return_ok']),
             );
         }
         
-        $order_id      = sanitize_key($_GET['order_id']);
+        $order_id      = $_GET['order_id'];
         $order         = new WC_Order($order_id);
         $title         = array();
         $items_array   = array();
@@ -139,12 +139,11 @@ class CloudPayments_Init
         $data['publicId']    = $options->public_id;
         $data['description'] = $options->order_text . ' ' . $order_id;
         $data['amount']      = (float)$order->get_total();
-        $data['currency']    = $options->currency;
+        $data['currency']    = ($options->currency !== 'siteCurrency') ? $options->currency : get_woocommerce_currency();
         $data['skin']        = $options->skin;
         $data['invoiceId']   = $order_id;
-        $data['email']       = $order->get_billing_email();
+        $data['email']       = $current_user->user_email;
         $data['data']        = $options->kassa_enabled == 'yes' ? $kassa_array : [];
-        
         
         return array(
             'data'       => $data,
@@ -188,7 +187,6 @@ class CloudPayments_Init
         if ( ! class_exists('WooCommerce')) {
             return;
         }
-        
         add_filter('woocommerce_payment_gateways', [__CLASS__, 'add_gateway_class']);
         
         require(CPGWWC_PLUGIN_DIR . 'inc/class-cloud-payments-api.php');
@@ -198,8 +196,6 @@ class CloudPayments_Init
     public static function add_gateway_class($methods)
     {
         $methods[] = 'WC_CloudPayments_Gateway';
-        
         return $methods;
     }
-    
 }
