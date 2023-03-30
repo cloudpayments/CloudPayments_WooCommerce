@@ -91,11 +91,23 @@ class CloudPayments_Init
             'object'   => 4,
             "ean"      => null
         );
+
+        $shipping_spic = $options->shipping_spic;
+        $shipping_package_code = $options->shipping_package_code;
+
+        if($shipping_spic && $shipping_package_code) {
+            $shipping_data['spic'] = $shipping_spic;
+            $shipping_data['packageCode'] = $shipping_package_code;
+        }
+
+        $AdditionalReceiptInfos = false;
         
         foreach ($items as $item) {
             if ($options->kassa_enabled == 'yes') {
                 $product       = $item->get_product();
-                $items_array[] = array(
+                $attributes    = $product->get_attributes();
+
+                $cp_item = array(
                     "label"    => $item['name'],
                     "price"    => number_format((float)$product->get_price(), 2, '.', ''),
                     "quantity" => number_format((float)$item['quantity'], 2, '.', ''),
@@ -105,6 +117,16 @@ class CloudPayments_Init
                     'object'   => (int)$options->kassa_object,
                     "ean"      => ($options->kassa_skubarcode == 'yes') ? ((strlen($product->get_sku()) < 1) ? null : $product->get_sku()) : null
                 );
+
+                if (key_exists('pa_packagecode', $attributes) && key_exists('pa_spic', $attributes)) {
+                    $cp_item['packageCode'] = $attributes['pa_packagecode']->get_slugs()[0];
+                    $cp_item['spic'] = $attributes['pa_spic']->get_slugs()[0];
+                    if (!$AdditionalReceiptInfos) {
+                        $AdditionalReceiptInfos = ["Вы стали обладателем права на 1% cashback"]; // Это статичное значение
+                    }
+                }
+
+                $items_array[] = $cp_item;
             }
             $title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
         }
@@ -124,7 +146,11 @@ class CloudPayments_Init
                 )
             ))
         );
-        
+
+        if ($AdditionalReceiptInfos) {
+            $kassa_array['cloudPayments']['customerReceipt']['AdditionalReceiptInfos'] = $AdditionalReceiptInfos;
+        }
+
         $widget_f = 'charge';
         
         if ($options->enabledDMS != 'no') {

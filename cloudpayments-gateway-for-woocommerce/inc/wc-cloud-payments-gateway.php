@@ -60,7 +60,13 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         $this->inn                = $this->get_option('inn');
         $this->order_text         = $this->get_option('order_text');
         $this->enable_for_methods = $this->get_option( 'enable_for_methods', array() );
-        
+        $this->shipping_spic      = $this->get_option('shipping_spic');
+        $this->shipping_package_code = $this->get_option('shipping_package_code');
+
+        if($this->currency === 'UZS') {
+            $this->icon           = plugin_dir_url(__FILE__) . '../visa-mastercard-uz.png';
+        }
+
         add_action('woocommerce_receipt_wc_cloudpayments_gateway', array($this, 'payment_page'));
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
         add_action('woocommerce_order_status_changed', array($this, 'update_order_status'), 10, 3);
@@ -428,6 +434,7 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
                     'pl'    => __('Польский', 'woocommerce'),
                     'pt'    => __('Португальский', 'woocommerce'),
                     'cs-CZ' => __('Чешский', 'woocommerce'),
+                    'uz'    => __('Узбекский', 'woocommerce'),
                 ),
             ),
             'enable_for_methods' => array(
@@ -568,6 +575,18 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
                 'label'   => __('Отправлять артикул (SKU) товара как штрих-код', 'woocommerce'),
                 'default' => 'yes'
             ),
+            'shipping_spic' => array(
+                'title'       => __('Код ИКПУ доставки', 'woocommerce'),
+                'type'        => 'text',
+                'description' => '',
+                'default'     => '',
+        ),
+            'shipping_package_code' => array(
+                'title'       => __('Код упаковки доставки', 'woocommerce'),
+                'type'        => 'text',
+                'description' => '',
+                'default'     => '',
+            )
         );
     }
     
