@@ -4,7 +4,7 @@ Contributors: cpsupport
 Tags: woocommerce, payment, payments, cloudpayments
 Requires at least: 4.9.7
 Tested up to: 6.1
-Stable tag: 3.0.7
+Stable tag: 3.0.8
 Requires PHP: 5.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -131,9 +131,15 @@ http://domain.ru/wordpress/wc-api/wc_cloudpayments_gateway?action=receipt
 
 == Upgrade Notice ==
 
+= 3.0.8 =
+* Обновление документации
+
+= 3.0.7 =
+* Минорное исправления
+
 = 3.0.6 =
 * Добавлен выбор валюты виджета
-* Добавлены дополнительные параметры фискализации
+* Добавлены дополнительные параметры фискализации - [подробнее](https://static.cloudpayments.ru/docs/uz/CP_WooCommerce_UZ.pdf)
 
 = 3.0.5 =
 * Минорное исправления
@@ -146,7 +152,7 @@ http://domain.ru/wordpress/wc-api/wc_cloudpayments_gateway?action=receipt
 * Добавлена передача ID транзакции в Примечания заказа
 
 = 3.0.3 =
-* Минорное исправления  
+* Минорное исправления
 * Добавлен дизайн инструкции по настройке данных в ЛК + добавили кнопку копирования URLа уведомления в буфер обмена  
 * Добавлены несколько фильтров
 
@@ -170,9 +176,15 @@ http://domain.ru/wordpress/wc-api/wc_cloudpayments_gateway?action=receipt
 
 == Changelog ==
 
+= 3.0.8 =
+* Обновление документации
+
+= 3.0.7 =
+* Минорное исправления
+
 = 3.0.6 =
 * Добавлен выбор валюты виджета
-* Добавлены дополнительные параметры фискализации
+* Добавлены дополнительные параметры фискализации - [подробнее](https://static.cloudpayments.ru/docs/uz/CP_WooCommerce_UZ.pdf)
 
 = 3.0.5 =
 * Минорные исправления

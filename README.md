@@ -102,6 +102,16 @@ https://domen.ru/wc-api/wc_cloudpayments_gateway?action=receipt
 
 == Upgrade Notice ==  
 
+= 3.0.8 =
+* Обновление документации
+
+= 3.0.7 =
+* Минорное исправления
+* 
+= 3.0.6 =
+* Добавлен выбор валюты виджета
+* Добавлены дополнительные параметры фискализации - [подробнее](https://static.cloudpayments.ru/docs/uz/CP_WooCommerce_UZ.pdf)
+
 = 3.0.5 =
 * Минорное исправления
 
@@ -133,6 +143,16 @@ https://domen.ru/wc-api/wc_cloudpayments_gateway?action=receipt
 * Добавлен обработчик receipt уведомлений.
 
 == Changelog ==
+
+= 3.0.8 =
+* Обновление документации
+
+= 3.0.7 =
+* Минорное исправления
+
+= 3.0.6 =
+* Добавлен выбор валюты виджета
+* Добавлены дополнительные параметры фискализации - [подробнее](https://static.cloudpayments.ru/docs/uz/CP_WooCommerce_UZ.pdf)
 
 = 3.0.5 =
 * Минорные исправления
