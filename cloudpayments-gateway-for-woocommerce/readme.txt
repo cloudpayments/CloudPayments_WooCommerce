@@ -4,7 +4,7 @@ Contributors: cpsupport
 Tags: woocommerce, payment, payments, cloudpayments
 Requires at least: 4.9.7
 Tested up to: 6.1
-Stable tag: 3.0.8
+Stable tag: 3.0.9
 Requires PHP: 5.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -131,6 +131,9 @@ http://domain.ru/wordpress/wc-api/wc_cloudpayments_gateway?action=receipt
 
 == Upgrade Notice ==
 
+= 3.0.9 =
+* Исправлен баг с передачей данных для онлайн-чека при оплате по сохраненной карте
+
 = 3.0.8 =
 * Обновление документации
 
@@ -175,6 +178,9 @@ http://domain.ru/wordpress/wc-api/wc_cloudpayments_gateway?action=receipt
 * Добавлен обработчик receipt уведомлений.
 
 == Changelog ==
+
+= 3.0.9 =
+* Исправлен баг с передачей данных для онлайн-чека при оплате по сохраненной карте
 
 = 3.0.8 =
 * Обновление документации

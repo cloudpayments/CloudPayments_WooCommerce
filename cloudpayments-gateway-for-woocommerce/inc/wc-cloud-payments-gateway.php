@@ -788,7 +788,7 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
                 'Email'       => $order->billing_email,
                 'Description' => 'Оплата заказа № ' . $order_id,
                 'IpAddress'   => $_SERVER['REMOTE_ADDR'],
-                'JsonData'    => $options->kassa_enabled == 'yes' ? $kassa_array : [],
+                'JsonData'    => $this->kassa_enabled == 'yes' ? $kassa_array : [],
             );
             
             $auth     = base64_encode($this->public_id . ":" . $this->api_pass);
