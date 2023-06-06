@@ -19,8 +19,16 @@ class CloudPayments_Init
             function () {
                 global $wp_scripts;
                 $wp_scripts->queue = array();
-                
-                wp_enqueue_script('CloudPayments_Widget', 'https://widget.cloudpayments.ru/bundles/cloudpayments.js', array(), time(), false);
+                $options = (object)get_option('woocommerce_wc_cloudpayments_gateway_settings');
+                $ch = curl_init('https://api.cloudpayments.ru/merchant/configuration/'.$options->public_id);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch, CURLOPT_HEADER, false);
+                $client = json_decode(curl_exec($ch));
+                curl_close($ch);
+				$cp_path = $client->Model->WidgetUrl ?? 'https://widget.cloudpayments.ru/';
+
+                wp_enqueue_script('CloudPayments_Widget', $cp_path.'bundles/cloudpayments.js', array(), time(), false);
                 wp_enqueue_script('CloudPayments_Widget_Init', plugins_url('/assets/widget-init.js', CPGWWC_PLUGIN_FILENAME), array(), time(), false);
                 
                 wp_localize_script('CloudPayments_Widget_Init', 'widget_data', CloudPayments_Init::widget_data());
