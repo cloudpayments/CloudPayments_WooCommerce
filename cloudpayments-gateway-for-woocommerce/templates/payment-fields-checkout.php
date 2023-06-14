@@ -25,7 +25,7 @@ $hide_widget_control = ! $tokens ? ' hide-widget_control' : '';
 					'<label class="cloud-payments-token-control"><input type="radio" onclick="saveCartBox();" name="cp_card" id="cp_card%s" value="%s" %s>%s</label>',
 					esc_attr( $key ),
 					esc_attr( $token->get_id() ),
-					checked( 1, $key, false ),
+					checked( 1, $token->is_default(), false ),
 					esc_html( $token->get_card_type() . ' ************' . $token->get_last4() )
 				),
 				$key,

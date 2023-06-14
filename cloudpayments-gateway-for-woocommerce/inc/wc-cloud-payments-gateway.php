@@ -776,9 +776,16 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         }
         
         $user_id = $order->get_user_id();
-        $token   = WC_Payment_Tokens::get_customer_default_token($user_id);
+        $tokens   = WC_Payment_Tokens::get_customer_tokens( $user_id, 'wc_cloudpayments_gateway' );
+
+        if (!empty($tokens)):
+            $default = array_filter($tokens, fn ($t) => $t->is_default());
+            $token = count($default)
+                ? array_shift($default)->get_token()
+                : array_pop($tokens)->get_token();
+        endif;
         
-        if ($token) {
+        if (isset($token)) {
             $request = array(
                 'Token'       => $token->get_token(),
                 'Amount'      => $order->get_total(),
