@@ -781,8 +781,8 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         if (!empty($tokens)):
             $default = array_filter($tokens, fn ($t) => $t->is_default());
             $token = count($default)
-                ? array_shift($default)->get_token()
-                : array_pop($tokens)->get_token();
+                ? array_shift($default)
+                : array_pop($tokens);
         endif;
         
         if (isset($token)) {
