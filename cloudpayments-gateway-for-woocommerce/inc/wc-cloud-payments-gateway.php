@@ -63,9 +63,11 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         $this->shipping_spic      = $this->get_option('shipping_spic');
         $this->shipping_package_code = $this->get_option('shipping_package_code');
 
-        if($this->currency === 'UZS') {
-            $this->icon           = plugin_dir_url(__FILE__) . '../visa-mastercard-uz.png';
-        }
+        if($this->currency === 'UZS')
+            $this->icon = plugin_dir_url(__FILE__) . '../visa-mastercard-uz.png';
+	
+	    if($this->currency === 'siteCurrency')
+		    $this->currency = get_woocommerce_currency();
 
         add_action('woocommerce_receipt_wc_cloudpayments_gateway', array($this, 'payment_page'));
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
@@ -88,6 +90,9 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
     {
         global $woocommerce;
         $order = new WC_Order($order_id);
+		
+		if (empty($_POST['cp_card']))
+			return false;
         
         if ($_POST['cp_card'] == 'widget') {
             $cp_save_card = $_POST['cp_save_card'] ? 1 : 0; // 1 : 1 всегда сохранять токен
@@ -110,9 +115,9 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
 			'cloudpayments_process_payment_shipping_data',
 			array(
 				'label'    => __( 'Shipping', 'woocommerce' ),
-				'price'    => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+				'price'    => number_format( (float) $order->get_shipping_total() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
 				'quantity' => '1.00',
-				'amount'   => number_format( (float) $order->get_total_shipping() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
+				'amount'   => number_format( (float) $order->get_shipping_total() + abs( (float) $order->get_shipping_tax() ), 2, '.', '' ),
 				'vat'      => ( 'null' == $this->delivery_taxtype) ? null : $this->delivery_taxtype,
 				'method'   => (int) $this->kassa_method,
 				'object'   => 4,
@@ -124,7 +129,7 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
         
         foreach ($items as $item) {
             if ($this->kassa_enabled == 'yes') {
-                $product       = $order->get_product_from_item($item);
+                $product       = $item->get_product();
                 $items_array[] = apply_filters(
 					'cloudpayments_process_payment_order_item',
 					array(
@@ -146,7 +151,7 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
             $title[] = $item['name'] . (isset($item['pa_ver']) ? ' ' . $item['pa_ver'] : '');
         }
         
-        if ($this->kassa_enabled == 'yes' && $order->get_total_shipping() > 0) {
+        if ($this->kassa_enabled == 'yes' && $order->get_shipping_total() > 0) {
             $items_array[] = $shipping_data;
         }
         
@@ -156,8 +161,8 @@ class WC_CloudPayments_Gateway extends WC_Payment_Gateway
                     "Items"            => $items_array,
                     "taxationSystem"   => $this->kassa_taxsystem,
                     'calculationPlace' => 'www.' . $_SERVER['SERVER_NAME'],
-                    "email"            => $order->billing_email,
-                    "phone"            => $order->billing_phone
+                    "email"            => $order->get_billing_email(),
+                    "phone"            => $order->get_billing_phone()
                 )
             ))
         );
